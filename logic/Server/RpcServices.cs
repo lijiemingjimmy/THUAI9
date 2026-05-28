@@ -217,6 +217,11 @@ namespace Server
                 do
                 {
                     playerSemas.Item1.Wait();
+                    if (!semaDicts[request.TeamId].ContainsKey(request.PlayerId))
+                    {
+                        GameServerLogging.logger.LogInfo($"Client {request.PlayerId} was removed (stale), exiting stream.");
+                        break;
+                    }
                     var character = game.GameMap.FindCharacterInPlayerID(request.TeamId, request.PlayerId);
 
                     if (!firstTime && request.PlayerId > 0 && (character == null || character.IsRemoved == true))
@@ -245,7 +250,7 @@ namespace Server
                         }
                     }
 
-                    playerSemas.Item2.Release();
+                    try { playerSemas.Item2.Release(); } catch { }
                 } while (game.GameMap.Timer.IsGaming);
             }
             catch (Exception ex)
@@ -313,8 +318,17 @@ namespace Server
             GameServerLogging.logger.LogDebug(
                 $"TRY Attack: Player {request.PlayerId} from Team {request.TeamId} attacking Player {request.AttackedPlayerId} from Team {request.AttackedTeamId}");
             BoolRes boolRes = new();
-            boolRes.ActSuccess = game.Attack(
-                request.TeamId, request.PlayerId);
+            if (request.AttackedTeamId > 0 && request.AttackedPlayerId == 0)
+            {
+                // 指定攻击工厂：跳过自动索敌，直接打目标工厂
+                boolRes.ActSuccess = game.AttackFactory(
+                    request.TeamId, request.PlayerId, request.AttackedTeamId);
+            }
+            else
+            {
+                boolRes.ActSuccess = game.Attack(
+                    request.TeamId, request.PlayerId);
+            }
             GameServerLogging.logger.LogDebug($"END Attack: {boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
@@ -464,9 +478,29 @@ namespace Server
                     request.TeamId,
                     request.PlayerId,
                     Transformation.CharacterTypeFromProto(request.CharacterType));
-            // if (boolRes.ActSuccess) teamMoneyPool.SubMoney(activateCost);
             GameServerLogging.logger.LogDebug($"END CreateCharacter:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
+        }
+
+        public override Task<CreatCharacterRes> CreateCharacterRID(CreateCharacterMsg request, ServerCallContext context)
+        {
+            GameServerLogging.logger.LogDebug($"TRY CreateCharacterRID: CharacterType {request.CharacterType} from Team {request.TeamId}");
+            CreatCharacterRes res = new();
+            if (request.TeamId <= 0 || request.TeamId > TeamCount || request.PlayerId <= 0 || !ValidPlayerID(request.PlayerId))
+            {
+                res.ActSuccess = false;
+                GameServerLogging.logger.LogDebug($"END CreateCharacterRID: Invalid TeamId {request.TeamId} or PlayerId {request.PlayerId}");
+                return Task.FromResult(res);
+            }
+            res.ActSuccess =
+                game.RecruitCharacterAtFactory(
+                    request.TeamId,
+                    request.PlayerId,
+                    Transformation.CharacterTypeFromProto(request.CharacterType));
+            if (res.ActSuccess)
+                res.PlayerId = request.PlayerId;
+            GameServerLogging.logger.LogDebug($"END CreateCharacterRID: {res.ActSuccess}, PlayerId={res.PlayerId}");
+            return Task.FromResult(res);
         }
 
         public override Task<BoolRes> Produce(ProduceGoodsMsg request, ServerCallContext context)
@@ -482,6 +516,20 @@ namespace Server
                         request.MaxProduceNum)
             };
             GameServerLogging.logger.LogDebug($"END Produce Goods: {boolRes.ActSuccess}");
+            return Task.FromResult(boolRes);
+        }
+
+        public override Task<BoolRes> UplevelTech(UplevelTechMsg request, ServerCallContext context)
+        {
+            GameServerLogging.logger.LogDebug($"TRY UplevelTech: Team {request.TeamId}, Tech {request.TechType}");
+            BoolRes boolRes = new()
+            {
+                ActSuccess =
+                    game.UplevelTech(
+                        request.TeamId,
+                        (Preparation.Utility.TechType)(int)request.TechType)
+            };
+            GameServerLogging.logger.LogDebug($"END UplevelTech: {boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
 

@@ -139,6 +139,7 @@ namespace Server
         {
             endGameSem.Wait();
             mwr?.Dispose();
+            game.CleanupAfterEnd();
         }
 
         private void SaveGameResult(string path)
@@ -252,11 +253,11 @@ namespace Server
 
         private static double[] TwoTeamLadderCalculate(double[] oriScores, double[] competitionScores)
         {
-            const double normalDeltaThreshold = 100.0;
+            const double normalDeltaThreshold = 300.0;
             const double correctParam = normalDeltaThreshold * 1.2;
-            const double winnerWeight = 4e-10;
-            const double loserWeight = 1.5e-10;
-            const double scoreDeltaThreshold = 50000.0;
+            const double winnerWeight = 4e-5;
+            const double loserWeight = 1.5e-5;
+            const double scoreDeltaThreshold = 3000.0;
 
             int winnerIndex = 0;
             int loserIndex = 1;
@@ -398,11 +399,12 @@ namespace Server
 
         private void OnGameEnd()
         {
-            mwr?.Flush();
+            try { mwr?.Flush(); } catch (Exception ex) { GameServerLogging.logger.LogError($"Flush playback failed: {ex.Message}"); }
             if (options.ResultFileName != DefaultArgumentOptions.FileName)
                 SaveGameResult(options.ResultFileName.EndsWith(".json")
                              ? options.ResultFileName
                              : options.ResultFileName + ".json");
+            GameServerLogging.logger.LogInfo($"OnGameEnd enters with mode={options.Mode}");
             int[] rawMatchScores = GetScore();
             double[] competitionScores = rawMatchScores.Select(x => (double)x).ToArray();
             if (options.Mode == 2)
@@ -416,9 +418,8 @@ namespace Server
                 }
                 else
                     rawMatchScores = ladderDeltas.Select(x => (int)x).ToArray();
-                endGameSem.Release();
-                Thread.Sleep(1);
                 SendGameResult(rawMatchScores, gameCrashed);
+                endGameSem.Release();
             }
             else if (options.Mode == 1)
             {
@@ -432,7 +433,6 @@ namespace Server
                     s = [2, 0];
                 */ // 得分计算方式待定
                 endGameSem.Release();
-                Thread.Sleep(1);
                 //SendGameResult(s);
             }
             else
@@ -464,7 +464,8 @@ namespace Server
                 {
                     foreach (var kvp in dict)
                     {
-                        kvp.Value.Item1.Release();
+                        try { kvp.Value.Item1.Release(); }
+                        catch (SemaphoreFullException) { /* 客户端还没消费上一帧 */ }
                     }
                 }
 

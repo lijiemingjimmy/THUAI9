@@ -5,6 +5,7 @@ using Preparation.Utility.Value.SafeValue.Atomic;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace Gaming
@@ -26,6 +27,7 @@ namespace Gaming
                 Tech.TryAdd("Cost", new AtomicLong(0));
                 Tech.TryAdd("Efficiency", new AtomicLong(0));
                 Tech.TryAdd("Market", new AtomicLong(0));
+                Tech.TryAdd("HP", new AtomicLong(0));
                 Tech.TryAdd("Robust", new AtomicLong(0));
                 Tech.TryAdd("Warrior", new AtomicLong(0));
                 Tech.TryAdd("AttackSize", new AtomicLong(0));
@@ -76,18 +78,29 @@ namespace Gaming
             }
         }
 
-        private void InitTeams()
+        private void InitTeams(int numOfTeam)
         {
-            // 工厂位置应该对应地图中 PlaceType.FACTORY 的位置
-            // MapInfo 中 defaultMap 的工厂位置是 [3,3], [3,46], [46,3], [46,46]
+            if (numOfTeam < 2 || numOfTeam > 4)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(numOfTeam),
+                    numOfTeam,
+                    "Team count must be 2, 3, or 4."
+                );
+            }
+
+            // Team layout order:
+            // Team 1: top-left, Team 2: bottom-right,
+            // Team 3: bottom-left, Team 4: top-right.
             var corners = new (int cx, int cy)[]
             {
-                (3, 3),      // Team 1 工厂位置
-                (3, 46),     // Team 2 工厂位置
-                (46, 3),     // Team 3 工厂位置
-                (46, 46)     // Team 4 工厂位置
+                (3, 3),
+                (46, 46),
+                (3, 46),
+                (46, 3),
             };
-            for (int i = 0; i < 4; i++)
+
+            for (int i = 0; i < numOfTeam; i++)
             {
                 long teamId = i + 1;
                 var (cx, cy) = corners[i];
@@ -98,6 +111,7 @@ namespace Gaming
                 ts.TrySetTech("Cost", 0);
                 ts.TrySetTech("Efficiency", 0);
                 ts.TrySetTech("Market", 0);
+                ts.TrySetTech("HP", 0);
                 ts.TrySetTech("Robust", 0);
                 ts.TrySetTech("Warrior", 0);
                 teams.TryAdd(teamId, ts);

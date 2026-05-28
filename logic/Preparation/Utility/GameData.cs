@@ -39,13 +39,13 @@ namespace Preparation.Utility
 
         public const int FactoryScore = 20000;
         public const int FactoryDisableTimeMs = 10_00;
+        public const int FactoryInvulnerableTimeMs = 30 * 1000;  // 前30秒工厂不掉血
 
         // Score multipliers for combat
         public const int CharacterDamageScoreMultiplier = 20;
         public const int CharacterKillScoreMultiplier = 40;
-        public const int FactoryDamageScoreMultiplier = 20;
 
-        public const int FactoryHP = 100;
+        public const int FactoryHP = 1000;
         public const int FactoryStorage = 5;
         public const int FactoryRobust = 20;
         public const int FactoryEfficiency = 1;
@@ -92,11 +92,11 @@ namespace Preparation.Utility
         public const int FactoryComputePowerPerSecond = 1;
         public const int FactoryComputePowerBonusPerCenterPerSecond = 2;
 
-        public const int BasePriceSemiconductor = 80;
-        public const int BasePriceMedicine = 50;
-        public const int BasePriceToys = 8;
-        public const int BasePriceClothes = 32;
-        public const int BasePriceFood = 6;
+        public const int BasePriceSemiconductor = 180;
+        public const int BasePriceMedicine = 110;
+        public const int BasePriceToys = 25;
+        public const int BasePriceClothes = 70;
+        public const int BasePriceFood = 20;
 
         public const double SmallMarketMultiplier = 1.1;
         public const double MediumMarketMultiplier = 1.3;
@@ -120,6 +120,7 @@ namespace Preparation.Utility
         public const int ProduceTimeFood = 1;
 
         public const int TechMaxLevel = 2;
+        public const int TechCostHP = 30;
         public const int TechCostRobust = 30;
         public const int TechCostWarrior = 60;
         public const int TechCostAttackSize = 60;
@@ -152,7 +153,7 @@ namespace Preparation.Utility
         public const int BarrierRadius = NumOfPosGridPerCell / 2;
 
         public static string API_key = "Mzg2MDU0MmEtNjcxZS00NjVkLTkxY2QtYTI3NzdjY2NhODU4";
-        public static string API_url = "http://eesast.com/llm/chat";
+        public static string API_url = "https://api.eesast.com/llm/chat";
         public static string ModelName = "deepseek-v4-pro";
         public const int AskAICostComputingPower = 10;
         public const int AskAIPromptMaxLength = 512;

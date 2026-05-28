@@ -26,15 +26,18 @@ namespace Gaming
     {
         private readonly Map gameMap;
         public Map GameMap => gameMap;
+        private readonly int numOfTeam;
+        public int NumOfTeam => numOfTeam;
         public Game(MapStruct mapResource, int numOfTeam)
         {
+            this.numOfTeam = numOfTeam;
             gameMap = new(mapResource);
             characterManager = new(this, gameMap);
             actionManager = new(this, gameMap, characterManager);
             tradeManager = new(this, gameMap);
             uplevelManager = new(this);
             teams = new ConcurrentDictionary<long, TeamState>();
-            InitTeams();
+            InitTeams(numOfTeam);
 
             tradeManager = new TradeManager(this, gameMap);
             uplevelManager = new UplevelManager(this);
@@ -84,6 +87,12 @@ namespace Gaming
                 gameMap.Add(factory);
             }
 
+            // 清除无用工厂（地图预置但未分配给任何队伍的工厂，如 2 队局中另外 2 个角）
+            if (gameMap.GameObjDict.TryGetValue(GameObjType.FACTORY, out var remainingFactories))
+            {
+                remainingFactories.RemoveAll(obj => obj is Factory f && f.TeamID.Get() >= teams.Count + 1);
+            }
+
             // 市场由地图预置（Map 构造时会根据 PlaceType.MARKET 创建），无需在此处硬编码创建
 
             if (!gameMap.Timer.Start(() => { }, () => CheckAndHandleGameEnd(), milliSeconds))
@@ -96,46 +105,55 @@ namespace Gaming
             (
                 () =>
                 {
-                    Thread.Sleep(GameData.CheckInterval);
-                    new Timothy.FrameRateTask.FrameRateTaskExecutor<int>
-                    (
-                        loopCondition: () => gameMap.Timer.IsGaming,
-                        loopToDo: () =>
-                        {
-                            int nowTimeMs = NowTime();
-                            TryTriggerPeriodicEvent(nowTimeMs);
-
-                            // Count occupied compute centers per team
-                            int[] occupiedCounts = new int[teams.Count + 1];
-                            if (gameMap.GameObjDict.TryGetValue(GameObjType.COMPUTE_CENTER, out var centerList))
+                    try
+                    {
+                        Thread.Sleep(GameData.CheckInterval);
+                        new Timothy.FrameRateTask.FrameRateTaskExecutor<int>
+                        (
+                            loopCondition: () => gameMap.Timer.IsGaming,
+                            loopToDo: () =>
                             {
-                                var centers = centerList.Cast<ComputeCenter>()?.ToNewList();
-                                if (centers != null)
+                                int nowTimeMs = NowTime();
+                                TryTriggerPeriodicEvent(nowTimeMs);
+
+                                // Count occupied compute centers per team
+                                int[] occupiedCounts = new int[teams.Count + 1];
+                                if (gameMap.GameObjDict.TryGetValue(GameObjType.COMPUTE_CENTER, out var centerList))
                                 {
-                                    foreach (var cc in centers)
+                                    var centers = centerList.Cast<ComputeCenter>()?.ToNewList();
+                                    if (centers != null)
                                     {
-                                        if (cc.IsOccupied)
+                                        foreach (var cc in centers)
                                         {
-                                            long ownerId = cc.OccupiedByTeamId;
-                                            if (ownerId > 0 && ownerId < occupiedCounts.Length)
-                                                occupiedCounts[ownerId]++;
+                                            if (cc.IsOccupied)
+                                            {
+                                                long ownerId = cc.OccupiedByTeamId;
+                                                if (ownerId > 0 && ownerId < occupiedCounts.Length)
+                                                    occupiedCounts[ownerId]++;
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            foreach (var team in teams)
-                            {
-                                var fac = team.Value.Factory;
-                                if (fac == null) continue;
-                                fac.SetOccupiedComputeCenters(occupiedCounts[team.Key]);
-                                fac.TickComputingPower(GameData.CheckInterval);
-                            }
+                                foreach (var team in teams)
+                                {
+                                    var fac = team.Value.Factory;
+                                    if (fac == null) continue;
+                                    fac.SetOccupiedComputeCenters(occupiedCounts[team.Key]);
+                                    fac.TickComputingPower(GameData.CheckInterval);
+                                }
 
-                            return !CheckAndHandleGameEnd();
-                        },
-                        timeInterval: GameData.CheckInterval,
-                        finallyReturn: () => 0
-                    ).Start();
+                                return !CheckAndHandleGameEnd();
+                            },
+                            timeInterval: GameData.CheckInterval,
+                            finallyReturn: () => 0
+                        ).Start();
+                    }
+                    catch (Exception ex)
+                    {
+                        LogicLogging.logger.LogError($"Game tick thread crashed: {ex}");
+                        try { gameMap?.Timer?.EndGame(); } catch { }
+                        try { CheckAndHandleGameEnd(); } catch { }
+                    }
                 }
             ).Start();
             return true;
@@ -180,6 +198,38 @@ namespace Gaming
         }
 
         /// <summary>
+        /// 直接攻击指定队伍的工厂（跳过角色自动索敌）。
+        /// 使用 teamId + playerId 作为发起者标识，targetTeamId 为目标工厂所属队伍。
+        /// </summary>
+        public bool AttackFactory(long teamId, long playerId, long targetTeamId)
+        {
+            if (!EnsureGameStarted(nameof(AttackFactory)))
+                return false;
+
+            if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
+            {
+                LogicLogging.logger.LogWarning($"AttackFactory failed: Character for team {teamId} player {playerId} not found.");
+                return false;
+            }
+            if (character == null || character.IsRemoved)
+            {
+                LogicLogging.logger.LogWarning($"AttackFactory failed: Character for team {teamId} player {playerId} is null or removed.");
+                return false;
+            }
+            int attackRange = (int)character.AttackSize.GetValue();
+            var factory = (Factory?)gameMap.GameObjDict[GameObjType.FACTORY]
+                .Find(obj => obj is Factory f
+                    && f.TeamID.Get() == targetTeamId
+                    && GameData.IsInTheRange(character.Position, f.Position, attackRange));
+            if (factory != null)
+            {
+                return actionManager.Attack(character, factory);
+            }
+            LogicLogging.logger.LogWarning($"AttackFactory failed: Factory for team {targetTeamId} not in range.");
+            return false;
+        }
+
+        /// <summary>
         /// 发起一次普通近战/远程攻击（根据地图上可见目标自动选择目标）。
         /// 使用 teamId + playerId（队内 id）作为发起者标识。
         /// </summary>
@@ -209,7 +259,7 @@ namespace Gaming
                 long bestDist = long.MaxValue;
                 foreach (var e in enemies)
                 {
-                    if (e == null || e.IsRemoved) continue;
+                    if (e == null || e.IsRemoved || e.HP <= 0) continue;
                     long d = (long)XY.DistanceCeil3(e.Position, character.Position);
                     if (d < bestDist)
                     {
@@ -223,10 +273,22 @@ namespace Gaming
                 }
             }
 
-            var factory = (Factory?)gameMap.OneInTheRange(character.Position, attackRange, GameObjType.FACTORY);
-            if (factory != null && factory.TeamID.Get() != character.TeamID.Get())
+            Factory? enemyFactory = null;
+            long bestFactoryDist = long.MaxValue;
+            var factoryObjs = gameMap.GameObjDict[GameObjType.FACTORY].ToNewList();
+            if (factoryObjs != null)
             {
-                return actionManager.Attack(character, factory);
+                foreach (var obj in factoryObjs)
+                {
+                    if (obj is not Factory f || f.TeamID.Get() == character.TeamID.Get() || f.HP <= 0) continue;
+                    if (!GameData.IsInTheRange(f.Position, character.Position, attackRange)) continue;
+                    long d = (long)XY.DistanceCeil3(f.Position, character.Position);
+                    if (d < bestFactoryDist) { bestFactoryDist = d; enemyFactory = f; }
+                }
+            }
+            if (enemyFactory != null)
+            {
+                return actionManager.Attack(character, enemyFactory);
             }
             LogicLogging.logger.LogWarning($"Attack failed: No valid targets in range for character of team {teamId} player {playerId}.");
             return false;
@@ -312,6 +374,15 @@ namespace Gaming
             if (!EnsureGameStarted(nameof(AskAI)))
                 return null;
 
+            // Prompt format: "apiKey||actualPrompt"
+            string apiKey = string.Empty;
+            var sepIndex = prompt.IndexOf("||", StringComparison.Ordinal);
+            if (sepIndex >= 0)
+            {
+                apiKey = prompt.Substring(0, sepIndex);
+                prompt = prompt.Substring(sepIndex + 2);
+            }
+
             if (string.IsNullOrWhiteSpace(prompt) || prompt.Length > GameData.AskAIPromptMaxLength)
             {
                 LogicLogging.logger.LogWarning($"AskAI failed: invalid prompt length for team {teamId}.");
@@ -337,7 +408,7 @@ namespace Gaming
                 if (fac.ComputingPower.CompareExROri(cur - cost, cur) == cur) break;
             }
 
-            var answer = marketEvent.AskWithPrompt(prompt);
+            var answer = marketEvent.AskWithPrompt(prompt, apiKey);
             if (string.IsNullOrWhiteSpace(answer))
             {
                 fac.AddComputingPower(cost);
@@ -479,7 +550,7 @@ namespace Gaming
                 try { canRecruit = fac.CanRecruit.Get(); } catch { canRecruit = false; }
             }
 
-            var techKeys = new string[] { "Cost", "Efficiency", "Market", "Robust", "Warrior", "Production", "Storage", "MoveSpeed", "Carry", "Price" };
+            var techKeys = new string[] { "Cost", "Efficiency", "HP", "Market", "Robust", "Warrior", "AttackSize", "Production", "Storage", "MoveSpeed", "Carry", "Price" };
             var techs = new Dictionary<string, int>(techKeys.Length);
             foreach (var k in techKeys) techs[k] = t.GetTech(k);
 
@@ -512,7 +583,7 @@ namespace Gaming
                     try { canRecruit = fac.CanRecruit.Get(); } catch { canRecruit = false; }
                 }
 
-                var techKeys = new string[] { "Cost", "Efficiency", "Market", "Robust", "Warrior", "Production", "Storage", "MoveSpeed", "Carry", "Price" };
+                var techKeys = new string[] { "Cost", "Efficiency", "HP", "Market", "Robust", "Warrior", "AttackSize", "Production", "Storage", "MoveSpeed", "Carry", "Price" };
                 var techs = new Dictionary<string, int>(techKeys.Length);
                 foreach (var k in techKeys) techs[k] = t.GetTech(k);
 
@@ -973,7 +1044,8 @@ namespace Gaming
                         destroyedCount++;
                     }
                 }
-                if (destroyedCount >= 3)
+                // 只剩 1 队或更少存活时结束
+                if (teams.Count - destroyedCount <= 1)
                 {
                     goto EndGame;
                 }
@@ -981,7 +1053,6 @@ namespace Gaming
                 return false;
 
             EndGame:
-                // 做必要的清理工作，尽量安全且幂等
                 gameEnded = true;
                 try
                 {
@@ -989,43 +1060,6 @@ namespace Gaming
                     gameMap?.Timer?.EndGame();
                 }
                 catch { }
-
-                try
-                {
-                    // 中断所有工厂的生产/招募能力
-                    foreach (var kv in teams)
-                    {
-                        try
-                        {
-                            var fac = GetTeamFactory(kv.Key);
-                            fac?.Interupt();
-                        }
-                        catch { }
-                    }
-                }
-                catch { }
-
-                try
-                {
-                    // 移除/销毁所有角色，释放地图引用
-                    foreach (var kv in teams)
-                    {
-                        long teamId = kv.Key;
-                        var chars = characterManager.GetTeamCharacters(teamId)?.ToList() ?? new List<Character>();
-                        foreach (var ch in chars)
-                        {
-                            try
-                            {
-                                // 标记为死亡并从地图移除
-                                characterManager.Destroy(teamId, (long)ch.PlayerID.Get(), CharacterState.DECEASED);
-                            }
-                            catch { }
-                        }
-                    }
-                }
-                catch { }
-
-                // 其它必要的释放/通知可以在这里加入（例如触发事件、记录结算结果等）
 
                 return true;
             }
@@ -1078,6 +1112,36 @@ namespace Gaming
                 return false;
             }
             return ActionManager.Stop(character);
+        }
+
+        /// <summary>
+        /// 在最终帧写入之后调用，做清理工作。应在 OnGameEnd / WaitForEnd 之后调用。
+        /// 与 CheckAndHandleGameEnd 分离是为了避免清理与最终帧构建的竞态。
+        /// </summary>
+        public void CleanupAfterEnd()
+        {
+            try
+            {
+                foreach (var kv in teams)
+                {
+                    try { GetTeamFactory(kv.Key)?.Interupt(); } catch { }
+                }
+            }
+            catch { }
+
+            try
+            {
+                foreach (var kv in teams)
+                {
+                    long teamId = kv.Key;
+                    var chars = characterManager.GetTeamCharacters(teamId)?.ToList() ?? new List<Character>();
+                    foreach (var ch in chars)
+                    {
+                        try { characterManager.Destroy(teamId, (long)ch.PlayerID.Get(), CharacterState.DECEASED); } catch { }
+                    }
+                }
+            }
+            catch { }
         }
     }
 }
