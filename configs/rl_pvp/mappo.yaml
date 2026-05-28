@@ -1,0 +1,42 @@
+agent_mode: policy
+decision_interval_ms: 300
+move_time_ms: 220
+log_path: outputs/rl_pvp/logs
+checkpoint_path: outputs/rl_pvp/checkpoints/policy.pt
+server_port: 8888
+team_count: 4
+game_duration: 300
+macro_actions:
+  - go_to_resource
+  - go_to_market
+  - go_to_center
+  - go_to_factory
+  - go_to_enemy
+  - harvest
+  - occupy_center
+  - load_goods
+  - sell_goods
+  - attack_nearest_enemy
+  - pressure_enemy_factory
+  - retreat
+  - idle
+reward_weights:
+  delta_score: 0.02
+  delta_inventory_value: 0.03
+  delta_compute_power: 0.05
+  center_occupied_bonus: 1.0
+  enemy_hp_damage: 0.03
+  enemy_factory_damage: 0.08
+  own_factory_damage_penalty: -0.12
+  kill_bonus: 5.0
+  death_penalty: -5.0
+  invalid_action_penalty: -0.4
+  idle_penalty: -0.01
+  distance_progress_reward: 0.03
+  terminal_win_bonus: 25.0
+  terminal_rank_bonus: 8.0
+opponent_sampling:
+  rule: 0.5
+  random: 0.2
+  historical: 0.3
+evaluation_seeds: [0, 1, 2, 3, 4]
