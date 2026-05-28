@@ -6,8 +6,13 @@ __pycache__/
 .env
 
 models/
+models_*/
 plots/
 plots_*/
+runs/
+runs_*/
+submission/
+submission_*/
 
 *.zip
 *.log

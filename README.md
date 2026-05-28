@@ -13,6 +13,39 @@ GitLink 镜像地址：[THUAI9: GitLink Mirror](https://www.gitlink.org.cn/EESAS
 
 https://docs.eesast.com/docs/contests/THUAI9
 
+## Baseline Python AI
+
+This workspace now contains a first-version player AI in `CAPI/python/PyAPI/AI.py`.
+
+Current behavior:
+
+- The team process recruits Drone, Robot, and AutonomousCar players.
+- The team process upgrades economy/mobility technology and produces basic goods from material.
+- Character processes look for resources, compute centers, markets, and the friendly factory from the map.
+- Drone and Robot prioritize compute centers, then resource harvesting.
+- AutonomousCar focuses on harvesting and product delivery.
+- Units load goods at the friendly factory, sell at markets, and attack visible enemies in range.
+
+Progress and assumptions are recorded in `AI_WORK_LOG.md`.
+
+### Trainable RL AI copy
+
+A second module is available at `CAPI/python/PyAPI/AI_RL.py`.
+
+It wraps the baseline behavior with tabular Q-learning for high-level decisions and saves learned Q tables in `CAPI/python/PyAPI`. Use it by setting the player module to `PyAPI.AI_RL`, for example:
+
+```bat
+set ACTIVE_AI_MODULE=PyAPI.AI_RL
+set THUAI9_RL_TRAIN=1
+start_thuai9_python_1team.bat
+```
+
+On Linux, use the bash launcher instead:
+
+```bash
+ACTIVE_AI_MODULE=PyAPI.AI_RL THUAI9_RL_TRAIN=1 ./start_thuai9_python_1team.sh
+```
+
 ## 软件架构
 
 ![structure](resource/structure_compressed.png)
