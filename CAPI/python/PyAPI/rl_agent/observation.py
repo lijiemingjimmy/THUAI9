@@ -120,3 +120,60 @@ def safe_call(fn, default):
         return fn()
     except Exception:
         return default
+
+
+OBS_VECTOR_DIM = 64
+
+
+def observation_to_vector(obs: Observation | Dict[str, Any], dim: int = OBS_VECTOR_DIM) -> List[float]:
+    if isinstance(obs, Observation):
+        data = obs.to_dict()
+    else:
+        data = obs or {}
+    team = data.get("team_state") or {}
+    self_state = data.get("self_state") or {}
+    hist = data.get("history") or {}
+    m = data.get("map_summary") or {}
+    allies = data.get("allies") or []
+    enemies = data.get("enemies") or []
+    mask = data.get("action_mask") or []
+    vec: List[float] = [
+        float(data.get("player_id", 0)) / 8.0,
+        float(data.get("team_id", 0)) / 4.0,
+        float(data.get("frame", 0)) / 10000.0,
+        float(data.get("game_time", 0)) / 600000.0,
+        1.0 if data.get("kind") == "team" else 0.0,
+        float(team.get("score", 0)) / 10000.0,
+        float(team.get("compute_power", 0)) / 500.0,
+        float(team.get("material", 0)) / 5000.0,
+        float(team.get("factory_hp", 0)) / 300.0,
+        float(self_state.get("hp", 0)) / 300.0,
+        float(self_state.get("load", 0)) / max(1.0, float(self_state.get("capacity", 1))),
+        float(self_state.get("speed", 0)) / 5000.0,
+        float(self_state.get("attack", 0)) / 100.0,
+        float(self_state.get("attack_range", 0)) / 10000.0,
+        float(self_state.get("goods_total", 0)) / 100.0,
+        float(len(allies)) / 6.0,
+        float(len(enemies)) / 12.0,
+        float(m.get("resources", 0)) / 100.0,
+        float(m.get("compute_centers", 0)) / 50.0,
+        float(m.get("markets", 0)) / 50.0,
+        float(hist.get("invalid_actions", 0)) / 100.0,
+        1.0 if hist.get("last_action_success", True) else 0.0,
+    ]
+    cell = self_state.get("cell") or [0, 0]
+    vec.extend([float(cell[0]) / 50.0, float(cell[1]) / 50.0])
+    for enemy in enemies[:4]:
+        ecell = enemy.get("cell") or [0, 0]
+        vec.extend([float(enemy.get("hp", 0)) / 300.0, float(ecell[0]) / 50.0, float(ecell[1]) / 50.0])
+    for ally in allies[:4]:
+        acell = ally.get("cell") or [0, 0]
+        vec.extend([float(ally.get("hp", 0)) / 300.0, float(acell[0]) / 50.0, float(acell[1]) / 50.0])
+    vec.extend(float(x) for x in mask[:13])
+    if len(vec) < dim:
+        vec.extend([0.0] * (dim - len(vec)))
+    return vec[:dim]
+
+
+def privileged_state_to_vector(obs: Observation | Dict[str, Any], dim: int = OBS_VECTOR_DIM) -> List[float]:
+    return observation_to_vector(obs, dim)

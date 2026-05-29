@@ -1,0 +1,199 @@
+{
+  "num_games": 2,
+  "candidate_team": "Team 1",
+  "mean_score": 0,
+  "std_score": 0.0,
+  "median_score": 0.0,
+  "win_rate": 1.0,
+  "rank_distribution": {
+    "1": 2
+  },
+  "mean_final_factory_hp": 300,
+  "factory_kill_rate": 0.0,
+  "average_first_score_time": null,
+  "average_first_center_occupation_time": 0,
+  "kill_death_proxy": null,
+  "invalid_action_rate": 0.18235522736105714,
+  "idle_action_rate": 0.07551010493587253,
+  "crash_rate": 0.0,
+  "timeout_rate": 0.0,
+  "average_game_duration": null,
+  "games": [
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/rule_vs_rule_2games_0000.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 0,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          0
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "timeout": false,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/rule_vs_rule_2games/rule_vs_rule_2games_0000",
+      "rollout_summary": {
+        "total_steps": 1240,
+        "invalid_action_rate": 0.1629032258064516,
+        "idle_action_rate": 0.02903225806451613,
+        "action_success_rate": 0.8370967741935483,
+        "reward_zero_rate": 0.34919354838709676,
+        "last_tick_by_game": {
+          "rule_vs_rule_2games_0000": 1200
+        }
+      },
+      "action_hist": [
+        {
+          "macro_action": "GO_RESOURCE",
+          "count": 462,
+          "rate": 0.3725806451612903
+        },
+        {
+          "macro_action": "GO_CENTER",
+          "count": 340,
+          "rate": 0.27419354838709675
+        },
+        {
+          "macro_action": "SAVE_COMPUTE",
+          "count": 189,
+          "rate": 0.15241935483870966
+        },
+        {
+          "macro_action": "PRODUCE_SEMICONDUCTOR",
+          "count": 174,
+          "rate": 0.1403225806451613
+        },
+        {
+          "macro_action": "WAIT_BUSY",
+          "count": 36,
+          "rate": 0.02903225806451613
+        },
+        {
+          "macro_action": "LOAD_GOODS",
+          "count": 29,
+          "rate": 0.02338709677419355
+        },
+        {
+          "macro_action": "RECRUIT_CAR",
+          "count": 4,
+          "rate": 0.0032258064516129032
+        },
+        {
+          "macro_action": "HARVEST",
+          "count": 3,
+          "rate": 0.0024193548387096775
+        },
+        {
+          "macro_action": "RECRUIT_DRONE",
+          "count": 2,
+          "rate": 0.0016129032258064516
+        },
+        {
+          "macro_action": "OCCUPY_CENTER",
+          "count": 1,
+          "rate": 0.0008064516129032258
+        }
+      ],
+      "rollout_warnings": [],
+      "mean_final_factory_hp_proxy": 300,
+      "first_score_time_proxy": null,
+      "first_center_occupation_time_proxy": 0
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/rule_vs_rule_2games_0001.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 0,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          0
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "timeout": false,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/rule_vs_rule_2games/rule_vs_rule_2games_0001",
+      "rollout_summary": {
+        "total_steps": 1328,
+        "invalid_action_rate": 0.20180722891566266,
+        "idle_action_rate": 0.12198795180722892,
+        "action_success_rate": 0.7981927710843374,
+        "reward_zero_rate": 0.10768072289156627,
+        "last_tick_by_game": {
+          "rule_vs_rule_2games_0001": 1198
+        }
+      },
+      "action_hist": [
+        {
+          "macro_action": "GO_RESOURCE",
+          "count": 545,
+          "rate": 0.41039156626506024
+        },
+        {
+          "macro_action": "PRODUCE_SEMICONDUCTOR",
+          "count": 270,
+          "rate": 0.2033132530120482
+        },
+        {
+          "macro_action": "GO_CENTER",
+          "count": 234,
+          "rate": 0.17620481927710843
+        },
+        {
+          "macro_action": "WAIT_BUSY",
+          "count": 162,
+          "rate": 0.12198795180722892
+        },
+        {
+          "macro_action": "SAVE_COMPUTE",
+          "count": 94,
+          "rate": 0.07078313253012049
+        },
+        {
+          "macro_action": "HARVEST",
+          "count": 11,
+          "rate": 0.008283132530120483
+        },
+        {
+          "macro_action": "OCCUPY_CENTER",
+          "count": 5,
+          "rate": 0.0037650602409638554
+        },
+        {
+          "macro_action": "RECRUIT_CAR",
+          "count": 4,
+          "rate": 0.0030120481927710845
+        },
+        {
+          "macro_action": "RECRUIT_DRONE",
+          "count": 2,
+          "rate": 0.0015060240963855422
+        },
+        {
+          "macro_action": "PRODUCE_MEDICINE",
+          "count": 1,
+          "rate": 0.0007530120481927711
+        }
+      ],
+      "rollout_warnings": [],
+      "mean_final_factory_hp_proxy": 300,
+      "first_score_time_proxy": null,
+      "first_center_occupation_time_proxy": 0
+    }
+  ]
+}

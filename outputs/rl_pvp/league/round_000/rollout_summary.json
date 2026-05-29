@@ -1,0 +1,98 @@
+{
+  "num_games": 1,
+  "candidate_team": "Team 1",
+  "mean_score": 0,
+  "std_score": 0.0,
+  "median_score": 0,
+  "win_rate": 1.0,
+  "rank_distribution": {
+    "1": 1
+  },
+  "mean_final_factory_hp": 300,
+  "factory_kill_rate": 0.0,
+  "average_first_score_time": null,
+  "average_first_center_occupation_time": null,
+  "kill_death_proxy": null,
+  "invalid_action_rate": 0.5754189944134078,
+  "idle_action_rate": 0.0,
+  "crash_rate": 0.0,
+  "timeout_rate": 0.0,
+  "average_game_duration": null,
+  "games": [
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/rollout_summary_0000.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 0,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          0
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "timeout": false,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/league/round_000/logs",
+      "rollout_summary": {
+        "total_steps": 358,
+        "invalid_action_rate": 0.5754189944134078,
+        "idle_action_rate": 0.0,
+        "action_success_rate": 0.4245810055865922,
+        "reward_zero_rate": 0.2737430167597765,
+        "last_tick_by_game": {
+          "logs": 598
+        }
+      },
+      "action_hist": [
+        {
+          "macro_action": "LOAD_GOODS",
+          "count": 176,
+          "rate": 0.49162011173184356
+        },
+        {
+          "macro_action": "SAVE_COMPUTE",
+          "count": 145,
+          "rate": 0.40502793296089384
+        },
+        {
+          "macro_action": "UPGRADE_EFFICIENCY",
+          "count": 32,
+          "rate": 0.0893854748603352
+        },
+        {
+          "macro_action": "GO_CENTER",
+          "count": 2,
+          "rate": 0.00558659217877095
+        },
+        {
+          "macro_action": "RECRUIT_CAR",
+          "count": 1,
+          "rate": 0.002793296089385475
+        },
+        {
+          "macro_action": "RECRUIT_DRONE",
+          "count": 1,
+          "rate": 0.002793296089385475
+        },
+        {
+          "macro_action": "GO_RESOURCE",
+          "count": 1,
+          "rate": 0.002793296089385475
+        }
+      ],
+      "rollout_warnings": [
+        "logs: team 1 has no character logs, BuildCharacter may have failed"
+      ],
+      "mean_final_factory_hp_proxy": 300,
+      "first_score_time_proxy": null,
+      "first_center_occupation_time_proxy": null
+    }
+  ]
+}

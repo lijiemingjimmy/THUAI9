@@ -137,3 +137,142 @@ THUAI9_CHECKPOINT=outputs/rl_pvp/checkpoints/policy.pt
 - `tools/rl_pvp/`
 - `configs/rl_pvp/`
 - `outputs/rl_pvp/` 运行时产物，不要提交 checkpoint。
+
+
+## Stage 2: 真实训练闭环
+
+### 1. Smoke
+
+```bash
+python3 tools/rl_pvp/launch_match.py \
+  --team-count 2 \
+  --duration 120 \
+  --team0-mode rule \
+  --team1-mode random \
+  --result outputs/rl_pvp/results/smoke_result.json \
+  --log-dir outputs/rl_pvp/logs/smoke
+```
+
+分析 rollout：
+
+```bash
+python3 tools/rl_pvp/analyze_rollouts.py \
+  --log-dir outputs/rl_pvp/logs/smoke \
+  --out outputs/rl_pvp/analysis/smoke
+```
+
+输出：`summary.json`、`action_hist.csv`、`reward_components.csv`、`warnings.txt`。
+
+### 2. Baseline regression
+
+```bash
+python3 tools/rl_pvp/evaluate.py \
+  --num-games 20 \
+  --team-count 2 \
+  --candidate-mode rule \
+  --opponent-mode random \
+  --duration 180 \
+  --out outputs/rl_pvp/eval/rule_vs_random.json
+
+python3 tools/rl_pvp/evaluate.py \
+  --num-games 20 \
+  --team-count 2 \
+  --candidate-mode rule \
+  --opponent-mode rule \
+  --duration 180 \
+  --out outputs/rl_pvp/eval/rule_vs_rule.json
+```
+
+### 3. Collect rollout
+
+```bash
+python3 tools/rl_pvp/evaluate.py \
+  --num-games 100 \
+  --team-count 2 \
+  --candidate-mode policy \
+  --candidate-checkpoint outputs/rl_pvp/checkpoints/ppo/latest.pt \
+  --opponent-mode rule \
+  --duration 300 \
+  --out outputs/rl_pvp/eval/collect_policy_vs_rule.json \
+  --log-dir outputs/rl_pvp/logs/policy_vs_rule_round_000
+```
+
+如果 checkpoint 不存在，先用 rule warm-start：
+
+```bash
+python3 tools/rl_pvp/evaluate.py \
+  --num-games 100 \
+  --team-count 2 \
+  --candidate-mode rule \
+  --opponent-mode rule \
+  --duration 300 \
+  --out outputs/rl_pvp/eval/collect_rule_vs_rule.json \
+  --log-dir outputs/rl_pvp/logs/rule_vs_rule_warmstart
+```
+
+### 4. Train PPO
+
+```bash
+python3 tools/rl_pvp/train_ppo.py \
+  --config configs/rl_pvp/ppo.yaml \
+  --data outputs/rl_pvp/logs/policy_vs_rule_round_000 \
+  --out outputs/rl_pvp/checkpoints/ppo/latest.pt
+```
+
+旧 rule 日志没有 `log_prob/value` 时会走 imitation/warm-start；policy rollout 有这些字段时走 PPO clipped objective。
+
+### 5. Evaluate policy
+
+```bash
+python3 tools/rl_pvp/evaluate.py \
+  --num-games 50 \
+  --team-count 2 \
+  --candidate-mode policy \
+  --candidate-checkpoint outputs/rl_pvp/checkpoints/ppo/latest.pt \
+  --opponent-mode rule \
+  --duration 300 \
+  --out outputs/rl_pvp/eval/ppo_vs_rule.json
+```
+
+### 6. MAPPO / league
+
+```bash
+python3 tools/rl_pvp/train_mappo.py \
+  --config configs/rl_pvp/mappo.yaml \
+  --data outputs/rl_pvp/logs/rule_vs_rule_warmstart \
+  --out outputs/rl_pvp/checkpoints/mappo/latest.pt
+
+python3 tools/rl_pvp/league.py \
+  --config configs/rl_pvp/mappo.yaml \
+  --rounds 5 \
+  --rollout-games 20 \
+  --candidate outputs/rl_pvp/checkpoints/mappo/latest.pt
+```
+
+当前 MAPPO 是最小可运行版：shared actor + centralized critic，但 critic 的 centralized state 在日志无法严格对齐时使用同 team 最近 observation 近似。
+
+### 7. Debug
+
+```bash
+THUAI9_RL_DEBUG=1 THUAI9_AGENT_MODE=rule python3 -m PyAPI.main -t 1 -p 0 -I 127.0.0.1 -P 8888
+THUAI9_AGENT_MODE=policy THUAI9_POLICY_CHECKPOINT=outputs/rl_pvp/checkpoints/ppo/latest.pt THUAI9_POLICY_DETERMINISTIC=1 python3 -m PyAPI.main -t 1 -p 0 -I 127.0.0.1 -P 8888
+```
+
+### 8. 正式提交边界
+
+正式 PvP 可提交：
+
+```text
+CAPI/python/PyAPI/AI.py
+CAPI/python/PyAPI/rl_agent/
+```
+
+训练辅助：
+
+```text
+tools/rl_pvp/
+configs/rl_pvp/
+outputs/rl_pvp/
+```
+
+正式提交不要依赖 `outputs/rl_pvp/logs`、训练数据、大 checkpoint、Server patch、绝对路径。如果要提交 policy，放轻量文件到 `CAPI/python/PyAPI/rl_agent/checkpoints/final_policy.pt`，并通过配置或 `THUAI9_POLICY_CHECKPOINT` 指向它。

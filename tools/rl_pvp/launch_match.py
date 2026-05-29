@@ -67,6 +67,8 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=None)
     for i in range(4):
         parser.add_argument(f"--team{i}-mode", default="rule" if i == 0 else "random")
+        parser.add_argument(f"--team{i}-checkpoint", default="")
+    parser.add_argument("--policy-deterministic", default="1")
     args = parser.parse_args()
 
     result = args.result if args.result.is_absolute() else REPO_ROOT / args.result
@@ -109,6 +111,11 @@ def main() -> int:
             env = env_base.copy()
             env["THUAI9_AGENT_MODE"] = mode
             env["THUAI9_TEAM_ID"] = str(team)
+            env["THUAI9_POLICY_DETERMINISTIC"] = str(args.policy_deterministic)
+            checkpoint = getattr(args, f"team{team-1}_checkpoint")
+            if checkpoint:
+                ckpt_path = Path(checkpoint)
+                env["THUAI9_POLICY_CHECKPOINT"] = str(ckpt_path if ckpt_path.is_absolute() else REPO_ROOT / ckpt_path)
             cmd = [args.python, "-m", "PyAPI.main", "-t", str(team), "-p", "0", "-I", args.server_ip, "-P", str(args.port), "--aiModule", "PyAPI.AI", "-d"]
             processes.append(start_process(cmd, PY_ROOT, env, log_dir / f"team{team}-0.log"))
         timeout = args.duration + 90

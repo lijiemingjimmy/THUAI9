@@ -1,0 +1,7 @@
+component,sum,mean,count
+delta_compute_power,8.249999999999986,0.018456375838926144,447
+delta_inventory_value,0.0,0.0,447
+delta_score,0.0,0.0,447
+idle_penalty,0.0,0.0,447
+invalid_action_penalty,-31.199999999999953,-0.0697986577181207,447
+own_factory_damage_penalty,0.0,0.0,447

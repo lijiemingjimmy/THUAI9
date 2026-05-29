@@ -24,6 +24,9 @@ class PlayerLocalState:
     current_macro_action: Optional[str] = None
     current_target: Optional[Cell] = None
     role: str = "unknown"
+    failure_count: int = 0
+    last_cell: Optional[Cell] = None
+    stuck_count: int = 0
 
 
 class StateTracker:

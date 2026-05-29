@@ -18,7 +18,9 @@ class RolloutLogger:
         self._lock = Lock()
 
     def write(self, obs: Observation, action_id: int, macro_action: str, action_mask: list[int], success: bool, reward: Optional[RewardResult], extra: Optional[Dict[str, Any]] = None) -> None:
+        game_id = self.path.parent.parent.name if self.path.parent.name == "agent_jsonl" else self.path.parent.name
         row: Dict[str, Any] = {
+            "game_id": game_id,
             "timestamp_ms": now_ms(),
             "game_tick": obs.frame,
             "game_time": obs.game_time,
@@ -38,6 +40,9 @@ class RolloutLogger:
             "reward": reward.total if reward else 0.0,
             "reward_components": reward.components if reward else {},
             "terminal_result": None,
+            "done": False,
+            "log_prob": None,
+            "value": None,
         }
         if extra:
             row.update(extra)

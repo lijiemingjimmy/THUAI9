@@ -40,3 +40,25 @@ opponent_sampling:
   random: 0.2
   historical: 0.3
 evaluation_seeds: [0, 1, 2, 3, 4]
+
+# training
+gamma: 0.995
+gae_lambda: 0.95
+clip_range: 0.2
+value_coef: 0.5
+entropy_coef: 0.01
+learning_rate: 0.0003
+batch_size: 4096
+minibatch_size: 256
+epochs: 3
+max_grad_norm: 0.5
+normalize_advantage: true
+obs_dim: 64
+state_dim: 64
+action_dim: 16
+hidden_dim: 128
+opponent_pool:
+  rule: 0.4
+  random: 0.1
+  latest: 0.3
+  historical: 0.2

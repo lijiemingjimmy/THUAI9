@@ -1,0 +1,430 @@
+{
+  "num_games": 20,
+  "candidate_team": "Team 1",
+  "mean_score": 1910.5,
+  "score_std": 2036.534986195916,
+  "win_rate": 0.95,
+  "crash_rate": 0.0,
+  "games": [
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0000.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 1810,
+        "Team 2": 160
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          1810
+        ],
+        [
+          "Team 2",
+          160
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0000"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0001.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 0,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          0
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0001"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0002.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 0,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          0
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0002"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0003.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 0,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          0
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0003"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0004.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 0,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          0
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0004"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0005.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 5570,
+        "Team 2": 1170
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          5570
+        ],
+        [
+          "Team 2",
+          1170
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0005"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0006.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 4560,
+        "Team 2": 480
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          4560
+        ],
+        [
+          "Team 2",
+          480
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0006"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0007.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 1170,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          1170
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0007"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0008.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 1170,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          1170
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0008"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0009.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 4400,
+        "Team 2": 60
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          4400
+        ],
+        [
+          "Team 2",
+          60
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0009"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0010.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 0,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          0
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0010"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0011.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 0,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          0
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0011"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0012.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 7420,
+        "Team 2": 2660
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          7420
+        ],
+        [
+          "Team 2",
+          2660
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0012"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0013.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 1170,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          1170
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0013"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0014.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 1170,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          1170
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0014"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0015.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 1810,
+        "Team 2": 4520
+      },
+      "winner": "Team 2",
+      "ranked": [
+        [
+          "Team 2",
+          4520
+        ],
+        [
+          "Team 1",
+          1810
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0015"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0016.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 2840,
+        "Team 2": 760
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          2840
+        ],
+        [
+          "Team 2",
+          760
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0016"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0017.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 2450,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          2450
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0017"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0018.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 1170,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          1170
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0018"
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/eval_0019.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 1500,
+        "Team 2": 900
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          1500
+        ],
+        [
+          "Team 2",
+          900
+        ]
+      ],
+      "returncode": 0,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/eval_0019"
+    }
+  ]
+}

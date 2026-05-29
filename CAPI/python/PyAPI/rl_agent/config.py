@@ -111,7 +111,7 @@ def load_config(path: str | Path | None = None) -> AgentConfig:
     cfg.decision_interval_ms = int(os.getenv("THUAI9_DECISION_INTERVAL_MS", cfg.decision_interval_ms))
     cfg.team_id = int(os.getenv("THUAI9_TEAM_ID", cfg.team_id))
     cfg.log_path = Path(os.getenv("THUAI9_LOG_DIR", str(cfg.log_path)))
-    cfg.checkpoint_path = Path(os.getenv("THUAI9_CHECKPOINT", str(cfg.checkpoint_path)))
+    cfg.checkpoint_path = Path(os.getenv("THUAI9_POLICY_CHECKPOINT", os.getenv("THUAI9_CHECKPOINT", str(cfg.checkpoint_path))))
     cfg.server_port = int(os.getenv("SERVER_PORT", cfg.server_port))
     cfg.log_path.mkdir(parents=True, exist_ok=True)
     cfg.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
