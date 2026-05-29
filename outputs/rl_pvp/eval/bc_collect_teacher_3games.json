@@ -1,0 +1,226 @@
+{
+  "num_games": 3,
+  "candidate_team": "Team 1",
+  "mean_score": 0,
+  "std_score": 0.0,
+  "median_score": 0,
+  "economy_metrics": {
+    "num_produce_requested": 12.0,
+    "num_produce_succeeded": 6.0,
+    "num_harvest_completed": 54.0,
+    "num_harvest_started": 4.0,
+    "num_returned_to_factory": 22.0,
+    "factory_wait_steps": 9.0,
+    "num_load_succeeded": 2.0,
+    "market_wait_steps": 21.0,
+    "goods_carried_steps": 23.0,
+    "num_sell_succeeded": 2.0,
+    "economy_loop_completed_count": 2.0,
+    "first_produce_time": 3656.0,
+    "first_harvest_time": 3456.0,
+    "first_load_time": 9008.0,
+    "first_sell_time": 12604.0,
+    "economy_loop_success_rate": 0.5,
+    "mean_time_to_first_sell": 13040.0,
+    "goods_carried_time": 6.8999999999999995,
+    "factory_wait_time": 2.6999999999999997,
+    "market_wait_time": 6.3
+  },
+  "win_rate": 0.0,
+  "rank_distribution": {},
+  "mean_final_factory_hp": 100.0,
+  "factory_kill_rate": 0.6666666666666666,
+  "average_first_score_time": 266.5,
+  "average_first_center_occupation_time": 0,
+  "kill_death_proxy": null,
+  "invalid_action_rate": 0.0,
+  "idle_action_rate": 0.07339449541284404,
+  "crash_rate": 1.0,
+  "timeout_rate": 0.0,
+  "average_game_duration": null,
+  "games": [
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/bc_collect_teacher_3games_0000.json",
+      "crashed": true,
+      "scores": {},
+      "returncode": 1,
+      "timeout": false,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/bc/bc_teacher/bc_collect_teacher_3games_0000",
+      "rollout_summary": {
+        "total_steps": 327,
+        "invalid_action_rate": 0.0,
+        "idle_action_rate": 0.22018348623853212,
+        "action_success_rate": 1.0,
+        "reward_zero_rate": 0.5137614678899083,
+        "last_tick_by_game": {
+          "bc_collect_teacher_3games_0000": 369
+        }
+      },
+      "economy_metrics": {
+        "num_produce_requested": 12,
+        "num_produce_succeeded": 6,
+        "num_harvest_completed": 54,
+        "num_harvest_started": 4,
+        "num_returned_to_factory": 22,
+        "factory_wait_steps": 9,
+        "num_load_succeeded": 2,
+        "market_wait_steps": 21,
+        "goods_carried_steps": 23,
+        "num_sell_succeeded": 2,
+        "economy_loop_completed_count": 2,
+        "first_produce_time": 3656.0,
+        "first_harvest_time": 3456.0,
+        "first_load_time": 9008.0,
+        "first_sell_time": 12604.0,
+        "economy_loop_success_rate": 0.5,
+        "mean_time_to_first_sell": 13040.0,
+        "goods_carried_time": 6.8999999999999995,
+        "factory_wait_time": 2.6999999999999997,
+        "market_wait_time": 6.3
+      },
+      "invalid_by_reason": {},
+      "invalid_by_fsm_state": {},
+      "action_hist": [
+        {
+          "macro_action": "SAVE_COMPUTE",
+          "count": 97,
+          "rate": 0.2966360856269113
+        },
+        {
+          "macro_action": "GO_CENTER",
+          "count": 64,
+          "rate": 0.19571865443425077
+        },
+        {
+          "macro_action": "WAIT_BUSY",
+          "count": 37,
+          "rate": 0.11314984709480122
+        },
+        {
+          "macro_action": "GO_RESOURCE",
+          "count": 34,
+          "rate": 0.10397553516819572
+        },
+        {
+          "macro_action": "IDLE",
+          "count": 29,
+          "rate": 0.08868501529051988
+        },
+        {
+          "macro_action": "GO_FACTORY",
+          "count": 22,
+          "rate": 0.0672782874617737
+        },
+        {
+          "macro_action": "GO_MARKET",
+          "count": 19,
+          "rate": 0.0581039755351682
+        },
+        {
+          "macro_action": "PRODUCE_SEMICONDUCTOR",
+          "count": 6,
+          "rate": 0.01834862385321101
+        },
+        {
+          "macro_action": "TEAM_IDLE",
+          "count": 6,
+          "rate": 0.01834862385321101
+        },
+        {
+          "macro_action": "HARVEST",
+          "count": 4,
+          "rate": 0.012232415902140673
+        },
+        {
+          "macro_action": "RECRUIT_CAR",
+          "count": 2,
+          "rate": 0.0061162079510703364
+        },
+        {
+          "macro_action": "RECRUIT_DRONE",
+          "count": 2,
+          "rate": 0.0061162079510703364
+        },
+        {
+          "macro_action": "LOAD_GOODS",
+          "count": 2,
+          "rate": 0.0061162079510703364
+        },
+        {
+          "macro_action": "SELL_GOODS",
+          "count": 2,
+          "rate": 0.0061162079510703364
+        },
+        {
+          "macro_action": "OCCUPY_CENTER",
+          "count": 1,
+          "rate": 0.0030581039755351682
+        }
+      ],
+      "rollout_warnings": [],
+      "mean_final_factory_hp_proxy": 300,
+      "first_score_time_proxy": 266.5,
+      "first_center_occupation_time_proxy": 0
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/bc_collect_teacher_3games_0001.json",
+      "crashed": true,
+      "scores": {},
+      "returncode": 1,
+      "timeout": false,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/bc/bc_teacher/bc_collect_teacher_3games_0001",
+      "rollout_summary": {
+        "total_steps": 0,
+        "invalid_action_rate": 0.0,
+        "idle_action_rate": 0.0,
+        "action_success_rate": 0.0,
+        "reward_zero_rate": 0.0,
+        "last_tick_by_game": {}
+      },
+      "economy_metrics": {
+        "economy_loop_success_rate": 0.0,
+        "mean_time_to_first_sell": null,
+        "goods_carried_time": 0.0,
+        "factory_wait_time": 0.0,
+        "market_wait_time": 0.0
+      },
+      "invalid_by_reason": {},
+      "invalid_by_fsm_state": {},
+      "action_hist": [],
+      "rollout_warnings": [],
+      "mean_final_factory_hp_proxy": 0.0,
+      "first_score_time_proxy": null,
+      "first_center_occupation_time_proxy": null
+    },
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/bc_collect_teacher_3games_0002.json",
+      "crashed": true,
+      "scores": {},
+      "returncode": 1,
+      "timeout": false,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/bc/bc_teacher/bc_collect_teacher_3games_0002",
+      "rollout_summary": {
+        "total_steps": 0,
+        "invalid_action_rate": 0.0,
+        "idle_action_rate": 0.0,
+        "action_success_rate": 0.0,
+        "reward_zero_rate": 0.0,
+        "last_tick_by_game": {}
+      },
+      "economy_metrics": {
+        "economy_loop_success_rate": 0.0,
+        "mean_time_to_first_sell": null,
+        "goods_carried_time": 0.0,
+        "factory_wait_time": 0.0,
+        "market_wait_time": 0.0
+      },
+      "invalid_by_reason": {},
+      "invalid_by_fsm_state": {},
+      "action_hist": [],
+      "rollout_warnings": [],
+      "mean_final_factory_hp_proxy": 0.0,
+      "first_score_time_proxy": null,
+      "first_center_occupation_time_proxy": null
+    }
+  ]
+}

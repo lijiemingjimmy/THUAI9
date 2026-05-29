@@ -72,6 +72,13 @@ def analyze(log_dir: Path) -> tuple[Dict[str, Any], List[Dict[str, Any]], List[D
     first_times: Dict[str, list] = defaultdict(list)
     economy_timeline: List[Dict[str, Any]] = []
     last_material_by_team: Dict[tuple[str, int], int] = {}
+    strategic_dist = Counter()
+    role_dist = Counter()
+    role_switch_events = Counter()
+    center_metrics = Counter()
+    combat_metrics = Counter()
+    bc_ready = Counter()
+    bc_action_counter = Counter()
 
     for row in rows:
         if "_parse_error" in row:
@@ -94,6 +101,38 @@ def analyze(log_dir: Path) -> tuple[Dict[str, Any], List[Dict[str, Any]], List[D
         last_tick_by_game[game] = max(last_tick_by_game[game], tick)
         action = str(row.get("macro_action_name", "UNKNOWN"))
         action_hist[action] += 1
+        strategic_dist[str(row.get("strategic_state") or "none")] += 1
+        role_dist[str(row.get("role_assignment") or "none")] += 1
+        if row.get("role_switch_reason"):
+            role_switch_events[str(row.get("role_switch_reason"))] += 1
+        if row.get("center_occupied"):
+            center_metrics["center_occupied_rows"] += 1
+        if action == "OCCUPY_CENTER" and row.get("action_success"):
+            center_metrics["occupy_started"] += 1
+        if action in {"ATTACK_NEAREST_ENEMY", "GO_ENEMY", "PRESSURE_ENEMY_FACTORY", "RETREAT"}:
+            combat_metrics[action] += 1
+        if row.get("obs_vector") is not None:
+            bc_ready["num_samples_with_obs"] += 1
+        if row.get("macro_action_id") is not None or row.get("raw_action_id") is not None:
+            bc_ready["num_samples_with_action"] += 1
+        if row.get("action_mask") is not None:
+            bc_ready["num_samples_with_mask"] += 1
+        mask_for_bc = row.get("action_mask") or []
+        action_id_for_bc = row.get("macro_action_id", row.get("raw_action_id"))
+        if isinstance(mask_for_bc, list) and action_id_for_bc is not None:
+            try:
+                aid = int(action_id_for_bc)
+                if 0 <= aid < len(mask_for_bc) and bool(mask_for_bc[aid]):
+                    bc_ready["num_valid_bc_samples"] += 1
+                    bc_action_counter[str(action)] += 1
+                else:
+                    bc_ready["invalid_label_count"] += 1
+            except Exception:
+                bc_ready["invalid_label_count"] += 1
+        if kind == "team" and len(mask_for_bc) not in {0, 11}:
+            bc_ready["mask_mismatch_count"] += 1
+        if kind == "character" and len(mask_for_bc) not in {0, 13}:
+            bc_ready["mask_mismatch_count"] += 1
         if "IDLE" in action or action == "WAIT_BUSY":
             idle += 1
         ok = bool(row.get("action_success"))
@@ -210,6 +249,16 @@ def analyze(log_dir: Path) -> tuple[Dict[str, Any], List[Dict[str, Any]], List[D
     economy_summary["factory_wait_time"] = economy_summary.get("factory_wait_steps", 0) * 0.3
     economy_summary["market_wait_time"] = economy_summary.get("market_wait_steps", 0) * 0.3
 
+    total_bc_actions = sum(bc_action_counter.values())
+    bc_entropy = 0.0
+    if total_bc_actions:
+        for count in bc_action_counter.values():
+            p = count / total_bc_actions
+            bc_entropy -= p * math.log(max(p, 1e-12))
+    bc_dataset_readiness = dict(bc_ready)
+    bc_dataset_readiness["action_distribution_entropy"] = bc_entropy
+    bc_dataset_readiness["recommended_for_bc"] = bool(bc_ready.get("num_valid_bc_samples", 0) >= 100 and bc_ready.get("mask_mismatch_count", 0) == 0)
+
     summary = {
         "log_dir": str(log_dir),
         "num_games": len(games),
@@ -238,6 +287,12 @@ def analyze(log_dir: Path) -> tuple[Dict[str, Any], List[Dict[str, Any]], List[D
         "invalid_by_game_time_bucket": dict(invalid_by_time_bucket),
         "economy_metrics": economy_summary,
         "economy_timeline": economy_timeline,
+        "strategic_state_distribution": dict(strategic_dist),
+        "role_assignment_distribution": dict(role_dist),
+        "role_switch_events": dict(role_switch_events),
+        "center_metrics": dict(center_metrics),
+        "combat_metrics": dict(combat_metrics),
+        "bc_dataset_readiness": bc_dataset_readiness,
         "warnings_count": len(warnings),
     }
     action_rows = [{"macro_action": k, "count": v, "rate": v / total if total else 0.0} for k, v in action_hist.most_common()]
@@ -305,7 +360,13 @@ def main() -> int:
     write_csv(args.out / "invalid_by_reason.csv", counter_rows(summary.get("invalid_by_reason", {}), "reason"))
     write_csv(args.out / "invalid_by_fsm_state.csv", counter_rows(summary.get("invalid_by_fsm_state", {}), "fsm_state"))
     write_csv(args.out / "economy_timeline.csv", summary.get("economy_timeline", []))
+    write_csv(args.out / "strategic_state_distribution.csv", counter_rows(summary.get("strategic_state_distribution", {}), "strategic_state"))
+    write_csv(args.out / "role_assignment_distribution.csv", counter_rows(summary.get("role_assignment_distribution", {}), "role_assignment"))
+    write_csv(args.out / "role_switch_events.csv", counter_rows(summary.get("role_switch_events", {}), "reason"))
     (args.out / "economy_metrics.json").write_text(json.dumps(summary.get("economy_metrics", {}), ensure_ascii=False, indent=2), encoding="utf-8")
+    (args.out / "center_metrics.json").write_text(json.dumps(summary.get("center_metrics", {}), ensure_ascii=False, indent=2), encoding="utf-8")
+    (args.out / "combat_metrics.json").write_text(json.dumps(summary.get("combat_metrics", {}), ensure_ascii=False, indent=2), encoding="utf-8")
+    (args.out / "bc_dataset_readiness.json").write_text(json.dumps(summary.get("bc_dataset_readiness", {}), ensure_ascii=False, indent=2), encoding="utf-8")
     (args.out / "invalid_examples.md").write_text(invalid_examples_markdown(summary, list(iter_rows(args.log_dir))), encoding="utf-8")
     (args.out / "warnings.txt").write_text("\n".join(warnings) + ("\n" if warnings else ""), encoding="utf-8")
     print(json.dumps({k: summary[k] for k in ["num_games", "total_steps", "invalid_action_rate", "idle_action_rate", "action_success_rate", "reward_zero_rate", "warnings_count"]}, ensure_ascii=False, indent=2))

@@ -40,6 +40,9 @@ class AgentConfig:
         "terminal_rank_bonus": 8.0,
     })
     macro_actions: List[str] = field(default_factory=list)
+    rule_profile: str = "balanced"
+    min_role_duration_ms: int = 3000
+    min_strategic_state_duration_ms: int = 5000
 
 
 def _load_yaml_or_json(path: Path) -> Dict[str, Any]:
@@ -108,6 +111,9 @@ def load_config(path: str | Path | None = None) -> AgentConfig:
     if "reward_weights" in raw and isinstance(raw["reward_weights"], dict):
         cfg.reward_weights.update({str(k): float(v) for k, v in raw["reward_weights"].items()})
     cfg.agent_mode = os.getenv("THUAI9_AGENT_MODE", str(cfg.agent_mode))
+    cfg.rule_profile = os.getenv("THUAI9_RULE_PROFILE", str(getattr(cfg, "rule_profile", "balanced")))
+    cfg.min_role_duration_ms = int(os.getenv("THUAI9_MIN_ROLE_DURATION_MS", getattr(cfg, "min_role_duration_ms", 3000)))
+    cfg.min_strategic_state_duration_ms = int(os.getenv("THUAI9_MIN_STRATEGIC_STATE_DURATION_MS", getattr(cfg, "min_strategic_state_duration_ms", 5000)))
     cfg.decision_interval_ms = int(os.getenv("THUAI9_DECISION_INTERVAL_MS", cfg.decision_interval_ms))
     cfg.team_id = int(os.getenv("THUAI9_TEAM_ID", cfg.team_id))
     cfg.log_path = Path(os.getenv("THUAI9_LOG_DIR", str(cfg.log_path)))

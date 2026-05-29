@@ -1,0 +1,10 @@
+{"epoch":1,"train_loss":2.124972105026245,"val_loss":1.993302822113037,"action_acc_top1":0.0,"action_acc_top3":0.46875,"valid_action_rate":1.0,"strategic_state_acc":0.125,"role_assignment_acc":0.25}
+{"epoch":2,"train_loss":2.1131129264831543,"val_loss":1.9815514087677002,"action_acc_top1":0.0,"action_acc_top3":0.46875,"valid_action_rate":1.0,"strategic_state_acc":0.125,"role_assignment_acc":0.25}
+{"epoch":3,"train_loss":2.1014158725738525,"val_loss":1.9699933528900146,"action_acc_top1":0.15625,"action_acc_top3":0.59375,"valid_action_rate":1.0,"strategic_state_acc":0.125,"role_assignment_acc":0.25}
+{"epoch":4,"train_loss":2.089853048324585,"val_loss":1.9585152864456177,"action_acc_top1":0.375,"action_acc_top3":0.59375,"valid_action_rate":1.0,"strategic_state_acc":0.125,"role_assignment_acc":0.25}
+{"epoch":5,"train_loss":2.0783543586730957,"val_loss":1.9471683502197266,"action_acc_top1":0.375,"action_acc_top3":0.59375,"valid_action_rate":1.0,"strategic_state_acc":0.125,"role_assignment_acc":0.25}
+{"epoch":6,"train_loss":2.066929340362549,"val_loss":1.9360222816467285,"action_acc_top1":0.375,"action_acc_top3":0.59375,"valid_action_rate":1.0,"strategic_state_acc":0.125,"role_assignment_acc":0.25}
+{"epoch":7,"train_loss":2.0556528568267822,"val_loss":1.9250298738479614,"action_acc_top1":0.46875,"action_acc_top3":0.59375,"valid_action_rate":1.0,"strategic_state_acc":0.125,"role_assignment_acc":0.25}
+{"epoch":8,"train_loss":2.044517993927002,"val_loss":1.9142106771469116,"action_acc_top1":0.5,"action_acc_top3":0.59375,"valid_action_rate":1.0,"strategic_state_acc":0.125,"role_assignment_acc":0.25}
+{"epoch":9,"train_loss":2.033508777618408,"val_loss":1.9035719633102417,"action_acc_top1":0.5,"action_acc_top3":0.59375,"valid_action_rate":1.0,"strategic_state_acc":0.125,"role_assignment_acc":0.25}
+{"epoch":10,"train_loss":2.0226759910583496,"val_loss":1.8930213451385498,"action_acc_top1":0.5,"action_acc_top3":0.59375,"valid_action_rate":1.0,"strategic_state_acc":0.125,"role_assignment_acc":0.25}

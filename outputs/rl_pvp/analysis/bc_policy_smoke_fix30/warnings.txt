@@ -1,0 +1,1 @@
+bc_policy_smoke_fix30: team 1 has no character logs, BuildCharacter may have failed

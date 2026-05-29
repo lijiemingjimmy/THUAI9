@@ -40,6 +40,7 @@ class CharacterAction(IntEnum):
 
 TEAM_ACTIONS = list(TeamAction)
 CHARACTER_ACTIONS = list(CharacterAction)
+ACTION_SPACE_VERSION = "stage4_v1"
 
 
 def team_action_mask(api, team_info: THUAI9.Team, max_characters: int = 6) -> Dict[TeamAction, bool]:

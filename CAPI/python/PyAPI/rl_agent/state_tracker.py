@@ -50,6 +50,12 @@ class PlayerLocalState:
     economy_target_factory: Optional[Cell] = None
     economy_target_market: Optional[Cell] = None
     blocked_economy_targets: set[Cell] = field(default_factory=set)
+    center_fsm_state: str = "SELECT_CENTER"
+    center_target: Optional[Cell] = None
+    center_blacklist: set[Cell] = field(default_factory=set)
+    center_failure_count: int = 0
+    center_occupied: bool = False
+    center_occupied_time_ms: int = 0
     target_goods: str = "Toys"
     state_enter_ms: int = 0
     material_at_harvest_start: int = 0
@@ -63,6 +69,18 @@ class StateTracker:
         self.assignments: Dict[int, Cell] = {}
         self.market_cursor: int = 0
         self.tech_cursor: int = 0
+        self.current_strategic_state: str = "OPENING"
+        self.last_strategic_state_switch_ms: int = 0
+        self.role_assignment_by_player: Dict[int, str] = {}
+        self.last_role_switch_time: Dict[int, int] = {}
+        self.role_switch_reason: str = "init"
+        self.first_sell_done: bool = False
+        self.first_center_occupied_time: int = 0
+        self.third_unit_built_time: int = 0
+        self.enemy_near_factory: bool = False
+        self.own_factory_under_attack: bool = False
+        self.last_enemy_seen: Optional[Cell] = None
+        self.last_enemy_seen_time: int = 0
 
     def player(self, player_id: int) -> PlayerLocalState:
         return self.players.setdefault(player_id, PlayerLocalState())

@@ -1,0 +1,36 @@
+{
+  "num_samples": 327,
+  "num_games": 1,
+  "obs_dim": 64,
+  "num_actions": 13,
+  "action_distribution": {
+    "RECRUIT_CAR": 2,
+    "SAVE_COMPUTE": 97,
+    "RECRUIT_DRONE": 2,
+    "PRODUCE_SEMICONDUCTOR": 6,
+    "TEAM_IDLE": 6,
+    "GO_RESOURCE": 34,
+    "IDLE": 29,
+    "HARVEST": 4,
+    "WAIT_BUSY": 37,
+    "GO_FACTORY": 22,
+    "LOAD_GOODS": 2,
+    "GO_MARKET": 19,
+    "SELL_GOODS": 2,
+    "GO_CENTER": 64,
+    "OCCUPY_CENTER": 1
+  },
+  "role_distribution": {
+    "TEAM": 113,
+    "ECONOMY": 112,
+    "CENTER": 102
+  },
+  "strategic_state_distribution": {
+    "OPENING": 2,
+    "ECONOMY_STABILIZE": 227,
+    "CENTER_CONTROL": 98
+  },
+  "valid_action_rate": 1.0,
+  "dropped_samples_by_reason": {},
+  "action_distribution_entropy": 2.066394345141957
+}

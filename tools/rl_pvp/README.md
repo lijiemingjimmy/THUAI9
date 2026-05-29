@@ -370,4 +370,105 @@ python3 tools/rl_pvp/train_bc.py \
   --out outputs/rl_pvp/checkpoints/bc/latest.pt
 ```
 
-当前 `train_bc.py` 是 Stage 4 placeholder。建议先用稳定 rule baseline 的 `(obs, action, mask)` 做 behavior cloning，让 policy 学会合法经济链，再恢复 PPO/MAPPO。
+当前 `train_bc.py` 已经是可训练版本；建议先用稳定 rule baseline 的 `(obs, action, mask)` 做 behavior cloning，让 policy 学会合法经济链，再恢复 PPO/MAPPO。
+
+## Stage 4: Strategic FSM + BC Warm Start
+
+Stage 4 不直接继续 PPO/MAPPO。原因很简单：PvP score 稀疏，PPO 在经济链、占点、招募、战斗语义还没被 policy 学会前会主要学习到噪声。现在先用 rule profiles 产出低 invalid 的专家轨迹，做 behavior cloning warm start；BC policy smoke 通过后再进入 Stage 5 的 PPO fine-tune / MAPPO / league。
+
+### Rule Profiles
+
+通过环境变量或配置字段选择：
+
+```bash
+THUAI9_RULE_PROFILE=economy_only
+THUAI9_RULE_PROFILE=balanced
+THUAI9_RULE_PROFILE=center_control
+THUAI9_RULE_PROFILE=defense
+THUAI9_RULE_PROFILE=pressure_factory
+THUAI9_RULE_PROFILE=bc_teacher
+```
+
+- `economy_only`: 只测经济闭环，不主动打架、不压厂。
+- `balanced`: 默认主基线，Car 经济，Drone/Robot 抢中心，第三人按局势补。
+- `center_control`: 中心优先，Car 保持经济。
+- `defense`: 战斗位守己方工厂，敌人进家先拦截。
+- `pressure_factory`: 经济基础后前压敌方工厂，低血量撤退。
+- `bc_teacher`: 训练数据用，覆盖经济、中心、第三人、防守、追击、压厂，优先低 invalid 和动作覆盖。
+
+### Strategic FSM
+
+高层状态：`OPENING -> ECONOMY_STABILIZE -> CENTER_CONTROL -> THIRD_UNIT_TIMING -> DEFENSE/HUNT_ENEMY/PRESSURE_FACTORY -> ENDGAME`。
+
+Strategic FSM 只决定角色职责，不替代 Stage 3 economy FSM。经济位仍走显式采集、生产、装货、卖货闭环；Drone/Robot 用 center control FSM；战斗位由 combat manager 决定防守、追击、撤退或压厂。
+
+### 收集专家轨迹
+
+下面命令是给用户手动运行的示例，本轮没有自动跑批量数据收集：
+
+```bash
+THUAI9_AGENT_MODE=rule THUAI9_RULE_PROFILE=bc_teacher \
+python3 tools/rl_pvp/evaluate.py \
+  --num-games 10 \
+  --team-count 2 \
+  --candidate-mode rule \
+  --opponent-mode random \
+  --duration 180 \
+  --out outputs/rl_pvp/eval/bc_collect_teacher.json \
+  --log-dir outputs/rl_pvp/logs/bc/bc_teacher \
+  --skip-build --skip-proto
+```
+
+建议也分别收集少量 `economy_only / center_control / defense / pressure_factory`，提高 BC 的动作覆盖。
+
+### 构建 BC Dataset
+
+```bash
+python3 tools/rl_pvp/build_bc_dataset.py \
+  --log-dirs outputs/rl_pvp/logs/bc/bc_teacher \
+  --out outputs/rl_pvp/bc_data/stage4_bc_dataset.pt
+```
+
+过滤规则：必须有 `obs_vector`、`macro_action_id`、固定维度 `action_mask`；action id 必须在 mask 中合法；默认丢弃 `api_success=false 且 contract_valid=false` 的坏样本。输出同名 `_summary.json`，包含 action/role/strategic state 分布和 drop 原因。
+
+### 训练 BC
+
+```bash
+python3 tools/rl_pvp/train_bc.py \
+  --data outputs/rl_pvp/bc_data/stage4_bc_dataset.pt \
+  --config configs/rl_pvp/bc.yaml \
+  --out outputs/rl_pvp/checkpoints/bc/latest.pt
+```
+
+`train_bc.py` 是真实训练：主任务 `obs -> macro_action_id`，辅助任务 `strategic_state / role_assignment / goods_type / amount_bucket`。metrics 写到 `outputs/rl_pvp/train_logs/bc/metrics.jsonl`，checkpoint 写 `latest.pt` 和 `best.pt`。
+
+Checkpoint 格式包含：`checkpoint_type=bc`、`model_state_dict`、`obs_dim`、`num_actions`、`obs_schema_version=stage4_v1`、`action_space_version`、`label_maps`、`config`。
+
+### BC Policy Smoke
+
+```bash
+THUAI9_AGENT_MODE=policy \
+THUAI9_POLICY_CHECKPOINT=outputs/rl_pvp/checkpoints/bc/latest.pt \
+THUAI9_POLICY_DETERMINISTIC=1 \
+python3 tools/rl_pvp/launch_match.py \
+  --team-count 2 \
+  --team0-mode policy \
+  --team0-checkpoint outputs/rl_pvp/checkpoints/bc/latest.pt \
+  --team1-mode random \
+  --duration 120 \
+  --result outputs/rl_pvp/results/bc_policy_smoke.json \
+  --log-dir outputs/rl_pvp/logs/bc_policy_smoke \
+  --skip-build --skip-proto
+```
+
+`policy_agent.py` 会根据 checkpoint 内 `checkpoint_type` 自动选择 BC/PPO/MAPPO 模型。BC 推理仍经过 action mask 和 macro executor；若模型动作非法，回退到 mask 内合法动作或 rule fallback。
+
+### 分析 BC Readiness
+
+```bash
+python3 tools/rl_pvp/analyze_rollouts.py \
+  --log-dir outputs/rl_pvp/logs/bc/bc_teacher \
+  --out outputs/rl_pvp/analysis/bc_teacher
+```
+
+新增输出：`strategic_state_distribution.csv`、`role_assignment_distribution.csv`、`role_switch_events.csv`、`center_metrics.json`、`combat_metrics.json`、`bc_dataset_readiness.json`。

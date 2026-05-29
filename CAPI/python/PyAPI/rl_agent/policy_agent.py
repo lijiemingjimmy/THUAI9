@@ -19,6 +19,7 @@ class PolicyAgent(RuleAgent):
         self._torch = None
         self._model = None
         self._fallback_warned = False
+        self.checkpoint_type = "none"
         self.deterministic = os.getenv("THUAI9_POLICY_DETERMINISTIC", "1") == "1"
         self._load_policy()
 
@@ -29,17 +30,29 @@ class PolicyAgent(RuleAgent):
             return
         try:
             import torch
-            from PyAPI.rl_agent.models import THUAI9ActorCritic, THUAI9MAPPO
+            from PyAPI.rl_agent.models import THUAI9ActorCritic, THUAI9BCPolicy, THUAI9MAPPO
 
             ckpt = torch.load(path, map_location="cpu")
             obs_dim = int(ckpt.get("obs_dim", 64)) if isinstance(ckpt, dict) else 64
-            action_dim = int(ckpt.get("action_dim", max(len(TEAM_ACTIONS), len(CHARACTER_ACTIONS)))) if isinstance(ckpt, dict) else max(len(TEAM_ACTIONS), len(CHARACTER_ACTIONS))
+            action_dim = int(ckpt.get("num_actions", ckpt.get("action_dim", max(len(TEAM_ACTIONS), len(CHARACTER_ACTIONS))))) if isinstance(ckpt, dict) else max(len(TEAM_ACTIONS), len(CHARACTER_ACTIONS))
             hidden_dim = int(ckpt.get("hidden_dim", 128)) if isinstance(ckpt, dict) else 128
-            if isinstance(ckpt, dict) and "mappo_approximation" in ckpt:
+            self.checkpoint_type = str(ckpt.get("checkpoint_type", "mappo" if isinstance(ckpt, dict) and "mappo_approximation" in ckpt else "ppo")) if isinstance(ckpt, dict) else "ppo"
+            if self.checkpoint_type == "bc":
+                maps = ckpt.get("label_maps", {}) if isinstance(ckpt, dict) else {}
+                model = THUAI9BCPolicy(
+                    obs_dim=obs_dim, action_dim=action_dim, hidden_dim=hidden_dim,
+                    strategic_dim=max(1, len(maps.get("strategic_state", {}))),
+                    role_dim=max(1, len(maps.get("role_assignment", {}))),
+                    goods_dim=max(1, len(maps.get("goods_type", {}))),
+                    amount_dim=max(1, len(maps.get("amount_bucket", {}))),
+                )
+                state = ckpt.get("model_state_dict", ckpt.get("model", ckpt))
+            elif self.checkpoint_type == "mappo" or (isinstance(ckpt, dict) and "mappo_approximation" in ckpt):
                 model = THUAI9MAPPO(obs_dim=obs_dim, state_dim=int(ckpt.get("state_dim", obs_dim)), action_dim=action_dim, hidden_dim=hidden_dim)
+                state = ckpt.get("model", ckpt)
             else:
                 model = THUAI9ActorCritic(obs_dim=obs_dim, action_dim=action_dim, hidden_dim=hidden_dim)
-            state = ckpt.get("model", ckpt) if isinstance(ckpt, dict) else ckpt
+                state = ckpt.get("model_state_dict", ckpt.get("model", ckpt)) if isinstance(ckpt, dict) else ckpt
             model.load_state_dict(state, strict=False)
             model.eval()
             self._torch = torch
@@ -70,7 +83,7 @@ class PolicyAgent(RuleAgent):
         if not result.success:
             local.invalid_actions += 1
         reward = compute_reward(api, obs, local, self.config, result.success)
-        self.logger.write(obs, int(action), action.name, mask_as_list(team_action_mask(api, team_info, self.config.max_characters), TEAM_ACTIONS), result.success, reward, {"failure_reason": result.reason, "log_prob": log_prob, "value": value, "policy_checkpoint": str(self.config.checkpoint_path)})
+        self.logger.write(obs, int(action), action.name, mask_as_list(team_action_mask(api, team_info, self.config.max_characters), TEAM_ACTIONS), result.success, reward, {"failure_reason": result.reason, "contract_reason": result.reason, "log_prob": log_prob, "value": value, "policy_checkpoint": str(self.config.checkpoint_path), "checkpoint_type": self.checkpoint_type, "selected_action": action.name, "selected_by_model_or_fallback": "model" if idx is not None else "fallback_rule"})
 
     def _character_step(self, api) -> None:
         self_info = api.GetSelfInfo()
@@ -90,7 +103,7 @@ class PolicyAgent(RuleAgent):
         obs = build_observation(api, self.player_id, self.navigator, local, is_team=False)
         if self_info.characterActiveState not in (THUAI9.CharacterState.Idle, THUAI9.CharacterState.NoneState):
             reward = compute_reward(api, obs, local, self.config, True)
-            self.logger.write(obs, int(CharacterAction.IDLE), "WAIT_BUSY", obs.action_mask, True, reward, {"log_prob": 0.0, "value": 0.0})
+            self.logger.write(obs, int(CharacterAction.IDLE), "WAIT_BUSY", obs.action_mask, True, reward, {"log_prob": 0.0, "value": 0.0, "checkpoint_type": self.checkpoint_type, "selected_by_model_or_fallback": "busy_wait"})
             return
         idx, log_prob, value = self._infer(obs.to_dict(), obs.action_mask, len(CHARACTER_ACTIONS))
         action = CHARACTER_ACTIONS[idx] if idx is not None else super()._choose_character_action(api, self_info)
@@ -103,7 +116,7 @@ class PolicyAgent(RuleAgent):
         if not result.success:
             local.invalid_actions += 1
         reward = compute_reward(api, obs, local, self.config, result.success)
-        self.logger.write(obs, int(action), action.name, obs.action_mask, result.success, reward, {"failure_reason": result.reason, "target": list(result.target) if result.target else None, "log_prob": log_prob, "value": value, "policy_checkpoint": str(self.config.checkpoint_path)})
+        self.logger.write(obs, int(action), action.name, obs.action_mask, result.success, reward, {"failure_reason": result.reason, "contract_reason": result.reason, "target": list(result.target) if result.target else None, "log_prob": log_prob, "value": value, "policy_checkpoint": str(self.config.checkpoint_path), "checkpoint_type": self.checkpoint_type, "selected_action": action.name, "selected_by_model_or_fallback": "model" if idx is not None else "fallback_rule"})
 
     def _infer(self, obs_dict, mask: list[int], action_count: int) -> Tuple[Optional[int], float, float]:
         try:
@@ -114,11 +127,20 @@ class PolicyAgent(RuleAgent):
                 return None, 0.0, 0.0
             action_mask = self._torch.tensor([full_mask[: getattr(self._model, "action_dim", action_count)]], dtype=self._torch.bool)
             with self._torch.no_grad():
-                logits, value, _hidden = self._model(obs_tensor, action_mask=action_mask)
-                dist = self._torch.distributions.Categorical(logits=logits[:, :action_count])
-                action = logits[0, :action_count].argmax() if self.deterministic else dist.sample()[0]
+                if self.checkpoint_type == "bc":
+                    out = self._model(obs_tensor, action_mask=action_mask)
+                    logits = out["action_logits"][:, :action_count]
+                    value = self._torch.zeros(1)
+                else:
+                    logits, value, _hidden = self._model(obs_tensor, action_mask=action_mask)
+                    logits = logits[:, :action_count]
+                dist = self._torch.distributions.Categorical(logits=logits)
+                action = logits[0].argmax() if self.deterministic else dist.sample()[0]
+                if not bool(full_mask[int(action.item())]):
+                    legal = [i for i, ok in enumerate(full_mask[:action_count]) if ok]
+                    action = self._torch.tensor(legal[0])
                 log_prob = dist.log_prob(action).item()
-            return int(action.item()), float(log_prob), float(value.item())
+            return int(action.item()), float(log_prob), float(value.item() if hasattr(value, "item") else 0.0)
         except Exception as exc:
             self._warn(f"policy inference failed, fallback action: {exc}")
             return None, 0.0, 0.0

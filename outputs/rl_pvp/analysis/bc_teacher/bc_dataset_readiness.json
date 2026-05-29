@@ -1,0 +1,8 @@
+{
+  "num_samples_with_obs": 327,
+  "num_samples_with_action": 327,
+  "num_samples_with_mask": 327,
+  "num_valid_bc_samples": 327,
+  "action_distribution_entropy": 2.066394345141957,
+  "recommended_for_bc": true
+}

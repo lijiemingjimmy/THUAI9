@@ -1,0 +1,17 @@
+seed: 0
+device: auto
+batch_size: 512
+epochs: 10
+learning_rate: 3.0e-4
+weight_decay: 1.0e-5
+validation_split: 0.1
+grad_clip_norm: 1.0
+use_action_mask_loss: true
+early_stop_patience: 3
+hidden_dim: 128
+loss:
+  action_ce: 1.0
+  strategic_state_ce: 0.2
+  role_assignment_ce: 0.2
+  goods_type_ce: 0.1
+  amount_bucket_ce: 0.1

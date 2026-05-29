@@ -6,12 +6,16 @@ from typing import Optional
 
 import PyAPI.structures as THUAI9
 from PyAPI.rl_agent.action_space import CHARACTER_ACTIONS, TEAM_ACTIONS, CharacterAction, TeamAction, character_action_mask, mask_as_list, team_action_mask
+from PyAPI.rl_agent.center_control import CenterControlManager
+from PyAPI.rl_agent.combat_manager import CombatManager
 from PyAPI.rl_agent.agent import BaseTHUAI9Agent
 from PyAPI.rl_agent.interaction_contract import InteractionContext
 from PyAPI.rl_agent.observation import build_observation
 from PyAPI.rl_agent.production_manager import ProductionManager
+from PyAPI.rl_agent.recruitment_manager import RecruitmentManager
 from PyAPI.rl_agent.reward import compute_reward
 from PyAPI.rl_agent.state_tracker import EconomyState, PlayerLocalState
+from PyAPI.rl_agent.strategic_fsm import RoleAssignment, StrategicFSM
 from PyAPI.rl_agent.utils import cell_of, goods_total, near, now_ms
 
 
@@ -19,7 +23,11 @@ class RuleAgent(BaseTHUAI9Agent):
     def __init__(self, api, player_id: int, config):
         super().__init__(api, player_id, config)
         self.production_manager = ProductionManager()
-        self.rule_profile = os.getenv("THUAI9_RULE_PROFILE", "").strip().lower()
+        self.recruitment_manager = RecruitmentManager()
+        self.strategic_fsm = StrategicFSM(config.min_strategic_state_duration_ms, config.min_role_duration_ms)
+        self.center_control = CenterControlManager()
+        self.combat_manager = CombatManager()
+        self.rule_profile = (os.getenv("THUAI9_RULE_PROFILE", "") or getattr(config, "rule_profile", "balanced") or "balanced").strip().lower()
         if config.agent_mode == "economy_debug":
             self.rule_profile = "economy_only"
 
@@ -42,11 +50,24 @@ class RuleAgent(BaseTHUAI9Agent):
             return
         local.last_decision_ms = now
         obs = build_observation(api, self.player_id, self.navigator, local, is_team=True)
+        strategic = self.strategic_fsm.update(api, self.tracker, team_info.teamID, self.rule_profile)
 
-        action = self._choose_team_action(api, team_info)
+        recruit = self.recruitment_manager.choose(api, team_info, self.rule_profile, strategic.state, self.tracker.first_sell_done, self.config.max_characters)
+        action = recruit.action
         result = self.executor.run_team(api, team_info, action, obs.frame, self.config.max_characters)
         macro_name = action.name
-        extra = {"failure_reason": result.reason, "macro_task": "TEAM_SCHEDULER", "contract_reason": result.reason}
+        extra = {
+            "failure_reason": result.reason,
+            "macro_task": "TEAM_SCHEDULER",
+            "contract_reason": result.reason,
+            "strategic_state": strategic.state.value,
+            "role_assignment": "TEAM",
+            "role_switch_reason": self.tracker.role_switch_reason,
+            "recruit_decision": recruit.action.name,
+            "recruit_character_type": getattr(recruit.character_type, "name", None),
+            "recruit_reason": recruit.reason,
+            "recruit_success": None,
+        }
 
         if action in {TeamAction.SAVE_COMPUTE, TeamAction.IDLE}:
             ctx = InteractionContext.team(api, team_info, self.navigator, self.config.max_characters)
@@ -69,6 +90,8 @@ class RuleAgent(BaseTHUAI9Agent):
                 macro_name = "TEAM_IDLE"
                 extra.update({"failure_reason": reason, "contract_reason": reason})
 
+        if action in {TeamAction.RECRUIT_CAR, TeamAction.RECRUIT_DRONE, TeamAction.RECRUIT_ROBOT}:
+            extra["recruit_success"] = result.success
         local.last_macro_action = macro_name
         local.last_action_success = result.success
         if not result.success and result.reason not in {"cooldown_active", "no_production_needed"}:
@@ -94,8 +117,10 @@ class RuleAgent(BaseTHUAI9Agent):
             return
         local.last_decision_ms = now
         obs = build_observation(api, self.player_id, self.navigator, local, is_team=False)
-        role = self._role(self_info)
-        local.role = {"economy": "ECONOMY_HARVEST_LOOP", "center": "CENTER_CONTROL", "pressure": "COMBAT_PRESSURE"}.get(role, role)
+        strategic = self.strategic_fsm.update(api, self.tracker, self_info.teamID, self.rule_profile)
+        role_assignment = RoleAssignment(self.tracker.role_assignment_by_player.get(self_info.playerID, strategic.roles.get(self_info.playerID, RoleAssignment.IDLE).value))
+        role = self._role(self_info, role_assignment)
+        local.role = role_assignment.value
 
         if self_info.characterActiveState not in (THUAI9.CharacterState.Idle, THUAI9.CharacterState.NoneState):
             reward = compute_reward(api, obs, local, self.config, True)
@@ -103,12 +128,24 @@ class RuleAgent(BaseTHUAI9Agent):
                 "failure_reason": "character_busy",
                 "contract_reason": "character_busy",
                 "fsm_state": local.economy_state.value if role == "economy" else None,
+                "center_fsm_state": local.center_fsm_state if role == "center" else None,
                 "macro_task": local.role,
+                "strategic_state": strategic.state.value,
+                "role_assignment": role_assignment.value,
+                "role_switch_reason": self.tracker.role_switch_reason,
             })
             return
 
+        center_decision = None
+        combat_decision = None
         if role == "economy":
             action = self._choose_economy_action(api, self_info, local, game_map, obs)
+        elif role == "center":
+            center_decision = self.center_control.choose_action(api, self_info, self.navigator, game_map, local, self.tracker)
+            action = center_decision.action
+        elif role in {"defense", "hunt", "pressure", "retreat", "scout"}:
+            combat_decision = self.combat_manager.choose_action(api, self_info, self.navigator, role_assignment)
+            action = combat_decision.action
         else:
             action = self._choose_character_action(api, self_info)
         result = self.executor.run_character(api, self_info, action, game_map, local)
@@ -125,6 +162,10 @@ class RuleAgent(BaseTHUAI9Agent):
             self.tracker.assign(self.player_id, result.target)
         if role == "economy":
             self._advance_economy_after(api, self_info, local, action, result, obs)
+        if center_decision is not None:
+            self.center_control.after_action(local, action, result.success)
+            if local.center_occupied and not self.tracker.first_center_occupied_time:
+                self.tracker.first_center_occupied_time = now_ms()
         if not result.success:
             local.invalid_actions += 1
             local.failure_count += 1
@@ -143,9 +184,35 @@ class RuleAgent(BaseTHUAI9Agent):
             "contract_reason": result.reason,
             "target": list(result.target) if result.target else None,
             "macro_task": local.role,
+            "strategic_state": strategic.state.value,
+            "role_assignment": role_assignment.value,
+            "role_switch_reason": self.tracker.role_switch_reason,
             "fsm_state": local.economy_state.value if role == "economy" else None,
+            "local_fsm_state": local.economy_state.value if role == "economy" else (local.center_fsm_state if role == "center" else None),
+            "center_fsm_state": local.center_fsm_state if role == "center" else None,
+            "target_type": self._target_type(action),
+            "target_cell": list(result.target) if result.target else (list(center_decision.target) if center_decision and center_decision.target else None),
+            "target_id": combat_decision.target_id if combat_decision else None,
+            "center_action_reason": center_decision.reason if center_decision else None,
+            "combat_action_reason": combat_decision.reason if combat_decision else None,
+            "center_occupied": bool(local.center_occupied),
             "economy_loop_count": local.loop_count,
         })
+
+    def _target_type(self, action: CharacterAction) -> Optional[str]:
+        if action in {CharacterAction.GO_RESOURCE, CharacterAction.HARVEST}:
+            return "resource"
+        if action in {CharacterAction.GO_MARKET, CharacterAction.SELL_GOODS}:
+            return "market"
+        if action in {CharacterAction.GO_CENTER, CharacterAction.OCCUPY_CENTER}:
+            return "center"
+        if action in {CharacterAction.GO_FACTORY, CharacterAction.RETREAT, CharacterAction.LOAD_GOODS}:
+            return "factory"
+        if action in {CharacterAction.GO_ENEMY, CharacterAction.ATTACK_NEAREST_ENEMY}:
+            return "enemy"
+        if action == CharacterAction.PRESSURE_ENEMY_FACTORY:
+            return "enemy_factory"
+        return None
 
     def _choose_team_action(self, api, team_info: THUAI9.Team) -> TeamAction:
         active_chars = [c for c in api.GetCharacters() if c.characterActiveState != THUAI9.CharacterState.Deceased]
@@ -367,7 +434,18 @@ class RuleAgent(BaseTHUAI9Agent):
             return CharacterAction.GO_FACTORY
         return CharacterAction.IDLE
 
-    def _role(self, self_info: THUAI9.Character) -> str:
+    def _role(self, self_info: THUAI9.Character, assignment: Optional[RoleAssignment] = None) -> str:
+        if assignment is not None:
+            return {
+                RoleAssignment.ECONOMY: "economy",
+                RoleAssignment.CENTER: "center",
+                RoleAssignment.DEFENSE: "defense",
+                RoleAssignment.HUNT: "hunt",
+                RoleAssignment.PRESSURE_FACTORY: "pressure",
+                RoleAssignment.RETREAT: "retreat",
+                RoleAssignment.SCOUT: "scout",
+                RoleAssignment.IDLE: "idle",
+            }.get(assignment, "idle")
         if self.rule_profile == "economy_only":
             return "economy" if self_info.playerID == 1 else "idle"
         if self_info.playerID == 1 or self_info.characterType == THUAI9.CharacterType.AutonomousCar:
@@ -391,6 +469,21 @@ class RuleAgent(BaseTHUAI9Agent):
 
 
 class RandomAgent(RuleAgent):
+    def _target_type(self, action: CharacterAction) -> Optional[str]:
+        if action in {CharacterAction.GO_RESOURCE, CharacterAction.HARVEST}:
+            return "resource"
+        if action in {CharacterAction.GO_MARKET, CharacterAction.SELL_GOODS}:
+            return "market"
+        if action in {CharacterAction.GO_CENTER, CharacterAction.OCCUPY_CENTER}:
+            return "center"
+        if action in {CharacterAction.GO_FACTORY, CharacterAction.RETREAT, CharacterAction.LOAD_GOODS}:
+            return "factory"
+        if action in {CharacterAction.GO_ENEMY, CharacterAction.ATTACK_NEAREST_ENEMY}:
+            return "enemy"
+        if action == CharacterAction.PRESSURE_ENEMY_FACTORY:
+            return "enemy_factory"
+        return None
+
     def _choose_team_action(self, api, team_info: THUAI9.Team) -> TeamAction:
         mask = team_action_mask(api, team_info, self.config.max_characters)
         legal = [a for a, ok in mask.items() if ok]
