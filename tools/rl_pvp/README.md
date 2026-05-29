@@ -276,3 +276,98 @@ outputs/rl_pvp/
 ```
 
 正式提交不要依赖 `outputs/rl_pvp/logs`、训练数据、大 checkpoint、Server patch、绝对路径。如果要提交 policy，放轻量文件到 `CAPI/python/PyAPI/rl_agent/checkpoints/final_policy.pt`，并通过配置或 `THUAI9_POLICY_CHECKPOINT` 指向它。
+
+## Stage 3: PvP Action Semantics And Economy FSM
+
+Stage 3 暂停继续优化 PPO/MAPPO。当前训练信号必须先来自稳定合法的 PvP CAPI 行为：rule/economy_debug 负责采集专家轨迹，后续 Stage 4 再用 BC warm start，然后才恢复 PPO/MAPPO。
+
+### 1. Probe 动作语义
+
+```bash
+python3 tools/rl_pvp/probe_action_semantics.py \
+  --duration 180 \
+  --out outputs/rl_pvp/probes/action_semantics
+```
+
+输出：`harvest_probe.jsonl`、`produce_probe.jsonl`、`load_probe.jsonl`、`sell_probe.jsonl`、`occupy_probe.jsonl`、`summary.md`。
+
+已确认的交互 contract：
+
+| Action | 位置条件 | 关键状态条件 | 成功后变化 |
+| --- | --- | --- | --- |
+| `Harvest()` | 资源点九宫格 cell | 角色 idle，资源未枯竭 | 原料进 team/factory source，不进角色背包 |
+| `ProduceGoods(goods, n)` | team 端即可 | 工厂 `canProduce`、原料足、库存未满 | 成品进 `factory.productInventory` |
+| `Load(goods, n)` | 自家工厂九宫格 cell | 角色 idle、库存足、容量足 | 货物进 `character.goodsLoad/currentLoad` |
+| `Sell(goods, n)` | 市场九宫格 cell | 角色 idle、携带货物足 | 分数立即增加，背包减少 |
+| `Occupy()` | 算力中心九宫格 cell | Drone/Robot，角色 idle | 持续占领，离开范围/被打断停止 |
+
+坐标 contract：角色 `x/y` 是世界坐标；格子坐标为 `x//1000, y//1000`；状态查询接口使用格子坐标；移动角度使用世界坐标指向目标格中心。
+
+### 2. 单局 economy debug
+
+```bash
+THUAI9_AGENT_MODE=rule THUAI9_RULE_PROFILE=economy_only \
+python3 tools/rl_pvp/launch_match.py \
+  --team-count 2 \
+  --duration 180 \
+  --team0-mode rule \
+  --team1-mode random \
+  --result outputs/rl_pvp/results/economy_debug.json \
+  --log-dir outputs/rl_pvp/logs/economy_debug
+```
+
+`economy_only` 只招募 1 个 Car，不抢中心、不主动攻击、不升级，专门验证：采集 -> 生产 -> 装货 -> 卖货。
+
+### 3. 分析
+
+```bash
+python3 tools/rl_pvp/analyze_rollouts.py \
+  --log-dir outputs/rl_pvp/logs/economy_debug \
+  --out outputs/rl_pvp/analysis/economy_debug
+```
+
+新增输出：`invalid_by_action.csv`、`invalid_by_reason.csv`、`invalid_by_fsm_state.csv`、`invalid_examples.md`、`economy_timeline.csv`、`economy_metrics.json`。
+
+关键经济指标：`first_harvest_time`、`first_produce_time`、`first_load_time`、`first_sell_time`、`num_sell_succeeded`、`economy_loop_completed_count`、`economy_loop_success_rate`。
+
+### 4. 集成测试
+
+```bash
+python3 tools/rl_pvp/test_economy_loop.py \
+  --duration 180 \
+  --out outputs/rl_pvp/tests/economy_loop
+```
+
+失败会返回非 0，并打印卡住的 scenario。Scenario A 是 1 个经济 Car；Scenario B 是经济 + 中心；Scenario C 是 rule vs random 180s。
+
+### 5. 回归评估
+
+```bash
+python3 tools/rl_pvp/evaluate.py \
+  --num-games 20 \
+  --team-count 2 \
+  --candidate-mode rule \
+  --opponent-mode random \
+  --duration 180 \
+  --out outputs/rl_pvp/eval/rule_vs_random_stage3.json \
+  --log-dir outputs/rl_pvp/logs/rule_vs_random_stage3
+
+python3 tools/rl_pvp/evaluate.py \
+  --num-games 10 \
+  --team-count 2 \
+  --candidate-mode rule \
+  --opponent-mode rule \
+  --duration 180 \
+  --out outputs/rl_pvp/eval/rule_vs_rule_stage3.json \
+  --log-dir outputs/rl_pvp/logs/rule_vs_rule_stage3
+```
+
+### 6. BC 预留
+
+```bash
+python3 tools/rl_pvp/train_bc.py \
+  --data outputs/rl_pvp/logs/rule_vs_rule_warmstart \
+  --out outputs/rl_pvp/checkpoints/bc/latest.pt
+```
+
+当前 `train_bc.py` 是 Stage 4 placeholder。建议先用稳定 rule baseline 的 `(obs, action, mask)` 做 behavior cloning，让 policy 学会合法经济链，再恢复 PPO/MAPPO。

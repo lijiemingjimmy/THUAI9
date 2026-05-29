@@ -1,0 +1,5 @@
+reason,count,rate
+factory_busy,46,0.48936170212765956
+factory_storage_full,46,0.48936170212765956
+no_product_inventory,1,0.010638297872340425
+ok,1,0.010638297872340425

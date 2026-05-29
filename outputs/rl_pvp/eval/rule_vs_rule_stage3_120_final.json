@@ -1,0 +1,189 @@
+{
+  "num_games": 1,
+  "candidate_team": "Team 1",
+  "mean_score": 1170,
+  "std_score": 0.0,
+  "median_score": 1170,
+  "economy_metrics": {
+    "num_produce_requested": 42.0,
+    "num_produce_succeeded": 21.0,
+    "num_harvest_completed": 235.0,
+    "num_harvest_started": 14.0,
+    "num_returned_to_factory": 302.0,
+    "factory_wait_steps": 7.0,
+    "num_load_succeeded": 11.0,
+    "market_wait_steps": 112.0,
+    "goods_carried_steps": 123.0,
+    "num_sell_succeeded": 11.0,
+    "economy_loop_completed_count": 11.0,
+    "first_produce_time": 4204.0,
+    "first_harvest_time": 4104.0,
+    "first_load_time": 9301.0,
+    "first_sell_time": 12857.0,
+    "economy_loop_success_rate": 0.7857142857142857,
+    "mean_time_to_first_sell": 49400.818181818184,
+    "goods_carried_time": 36.9,
+    "factory_wait_time": 2.1,
+    "market_wait_time": 33.6
+  },
+  "win_rate": 0.0,
+  "rank_distribution": {
+    "2": 1
+  },
+  "mean_final_factory_hp": 300,
+  "factory_kill_rate": 0.0,
+  "average_first_score_time": 289.5,
+  "average_first_center_occupation_time": 0,
+  "kill_death_proxy": null,
+  "invalid_action_rate": 0.003668378576669112,
+  "idle_action_rate": 0.16471019809244314,
+  "crash_rate": 0.0,
+  "timeout_rate": 0.0,
+  "average_game_duration": null,
+  "games": [
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/rule_vs_rule_stage3_120_final_0000.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 1170,
+        "Team 2": 1404
+      },
+      "winner": "Team 2",
+      "ranked": [
+        [
+          "Team 2",
+          1404
+        ],
+        [
+          "Team 1",
+          1170
+        ]
+      ],
+      "returncode": 0,
+      "timeout": false,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/rule_vs_rule_stage3_120_final",
+      "rollout_summary": {
+        "total_steps": 2726,
+        "invalid_action_rate": 0.003668378576669112,
+        "idle_action_rate": 0.16471019809244314,
+        "action_success_rate": 0.9963316214233309,
+        "reward_zero_rate": 0.3165810711665444,
+        "last_tick_by_game": {
+          "rule_vs_rule_stage3_120_final": 2394
+        }
+      },
+      "economy_metrics": {
+        "num_produce_requested": 42,
+        "num_produce_succeeded": 21,
+        "num_harvest_completed": 235,
+        "num_harvest_started": 14,
+        "num_returned_to_factory": 302,
+        "factory_wait_steps": 7,
+        "num_load_succeeded": 11,
+        "market_wait_steps": 112,
+        "goods_carried_steps": 123,
+        "num_sell_succeeded": 11,
+        "economy_loop_completed_count": 11,
+        "first_produce_time": 4204.0,
+        "first_harvest_time": 4104.0,
+        "first_load_time": 9301.0,
+        "first_sell_time": 12857.0,
+        "economy_loop_success_rate": 0.7857142857142857,
+        "mean_time_to_first_sell": 49400.818181818184,
+        "goods_carried_time": 36.9,
+        "factory_wait_time": 2.1,
+        "market_wait_time": 33.6
+      },
+      "invalid_by_reason": {
+        "masked": 9,
+        "path_unreachable_or_move_failed": 1
+      },
+      "invalid_by_fsm_state": {
+        "MOVE_TO_RESOURCE": 6,
+        "RECOVER_FROM_FAILURE": 3,
+        "none": 1
+      },
+      "action_hist": [
+        {
+          "macro_action": "GO_CENTER",
+          "count": 710,
+          "rate": 0.260454878943507
+        },
+        {
+          "macro_action": "SAVE_COMPUTE",
+          "count": 692,
+          "rate": 0.2538517975055026
+        },
+        {
+          "macro_action": "GO_RESOURCE",
+          "count": 405,
+          "rate": 0.14856933235509906
+        },
+        {
+          "macro_action": "IDLE",
+          "count": 356,
+          "rate": 0.1305942773294204
+        },
+        {
+          "macro_action": "GO_FACTORY",
+          "count": 305,
+          "rate": 0.11188554658840792
+        },
+        {
+          "macro_action": "GO_MARKET",
+          "count": 101,
+          "rate": 0.037050623624358035
+        },
+        {
+          "macro_action": "WAIT_BUSY",
+          "count": 72,
+          "rate": 0.02641232575201761
+        },
+        {
+          "macro_action": "PRODUCE_SEMICONDUCTOR",
+          "count": 21,
+          "rate": 0.007703595011005136
+        },
+        {
+          "macro_action": "TEAM_IDLE",
+          "count": 21,
+          "rate": 0.007703595011005136
+        },
+        {
+          "macro_action": "HARVEST",
+          "count": 14,
+          "rate": 0.005135730007336757
+        },
+        {
+          "macro_action": "LOAD_GOODS",
+          "count": 11,
+          "rate": 0.004035216434336023
+        },
+        {
+          "macro_action": "SELL_GOODS",
+          "count": 11,
+          "rate": 0.004035216434336023
+        },
+        {
+          "macro_action": "RECRUIT_CAR",
+          "count": 4,
+          "rate": 0.001467351430667645
+        },
+        {
+          "macro_action": "RECRUIT_DRONE",
+          "count": 2,
+          "rate": 0.0007336757153338225
+        },
+        {
+          "macro_action": "OCCUPY_CENTER",
+          "count": 1,
+          "rate": 0.00036683785766691124
+        }
+      ],
+      "rollout_warnings": [],
+      "mean_final_factory_hp_proxy": 300,
+      "first_score_time_proxy": 289.5,
+      "first_center_occupation_time_proxy": 0
+    }
+  ]
+}

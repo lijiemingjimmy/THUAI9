@@ -77,3 +77,19 @@ def iter_cells(game_map: list[list[THUAI9.PlaceType]]) -> Iterable[tuple[Cell, T
     for x, row in enumerate(game_map or []):
         for y, place in enumerate(row):
             yield (x, y), place
+
+
+world_to_cell = cell_of
+
+def cell_to_world_center(cell_x: int, cell_y: int) -> Tuple[int, int]:
+    return grid_center((cell_x, cell_y))
+
+def is_in_nine_grid(self_cell: Cell, target_cell: Cell) -> bool:
+    return near(self_cell, target_cell, 1)
+
+def distance_to_cell_center(world_pos: Tuple[int, int], cell: Cell) -> float:
+    cx, cy = grid_center(cell)
+    return math.hypot(world_pos[0] - cx, world_pos[1] - cy)
+
+def angle_to_target(src_world: Tuple[int, int], dst_world: Tuple[int, int]) -> float:
+    return angle_to(src_world[0], src_world[1], dst_world[0], dst_world[1])

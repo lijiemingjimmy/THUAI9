@@ -1,0 +1,1 @@
+economy_debug_stage3_short: team 2 has no character logs, BuildCharacter may have failed

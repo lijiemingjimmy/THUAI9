@@ -23,6 +23,9 @@ def enrich_result(row: Dict[str, Any], log_dir: Path) -> Dict[str, Any]:
     try:
         summary, actions, comps, warnings = analyze(log_dir)
         row["rollout_summary"] = {k: summary.get(k) for k in ["total_steps", "invalid_action_rate", "idle_action_rate", "action_success_rate", "reward_zero_rate", "last_tick_by_game"]}
+        row["economy_metrics"] = summary.get("economy_metrics", {})
+        row["invalid_by_reason"] = summary.get("invalid_by_reason", {})
+        row["invalid_by_fsm_state"] = summary.get("invalid_by_fsm_state", {})
         row["action_hist"] = actions[:20]
         row["rollout_warnings"] = warnings[:20]
         hp_values = []
@@ -63,12 +66,18 @@ def build_summary(results: List[Dict[str, Any]], candidate_team: str = "Team 1")
     first_center = [r.get("first_center_occupation_time_proxy") for r in results if r.get("first_center_occupation_time_proxy") is not None]
     crashed = [r for r in results if r.get("crashed") or r.get("returncode", 0) != 0]
     timeouts = [r for r in results if r.get("timeout")]
+    economy_totals: Dict[str, float] = {}
+    for r in results:
+        for key, value in (r.get("economy_metrics") or {}).items():
+            if isinstance(value, (int, float)) and value is not None:
+                economy_totals[key] = economy_totals.get(key, 0.0) + float(value)
     return {
         "num_games": len(results),
         "candidate_team": candidate_team,
         "mean_score": statistics.mean(scores) if scores else 0.0,
         "std_score": statistics.pstdev(scores) if len(scores) > 1 else 0.0,
         "median_score": median(scores),
+        "economy_metrics": economy_totals,
         "win_rate": len(wins) / len(results) if results else 0.0,
         "rank_distribution": rank_dist,
         "mean_final_factory_hp": statistics.mean(hp) if hp else 0.0,

@@ -46,13 +46,15 @@ def team_action_mask(api, team_info: THUAI9.Team, max_characters: int = 6) -> Di
     chars = [c for c in api.GetCharacters() if c.characterActiveState != THUAI9.CharacterState.Deceased]
     has_slot = len(chars) < max_characters
     can_build = team_info.computePower >= 50 and has_slot
+    factory = _team_factory(api, team_info.teamID)
+    can_produce = bool(factory is not None and factory.canProduce and sum(factory.productInventory.values()) < factory.storage)
     return {
         TeamAction.RECRUIT_CAR: can_build,
         TeamAction.RECRUIT_DRONE: can_build,
         TeamAction.RECRUIT_ROBOT: can_build,
-        TeamAction.PRODUCE_SEMICONDUCTOR: team_info.material >= 10,
-        TeamAction.PRODUCE_MEDICINE: team_info.material >= 5,
-        TeamAction.PRODUCE_TOYS: team_info.material >= 1,
+        TeamAction.PRODUCE_SEMICONDUCTOR: can_produce and team_info.material >= 10,
+        TeamAction.PRODUCE_MEDICINE: can_produce and team_info.material >= 5,
+        TeamAction.PRODUCE_TOYS: can_produce and team_info.material >= 1,
         TeamAction.UPGRADE_EFFICIENCY: team_info.computePower >= 40,
         TeamAction.UPGRADE_MOVE_SPEED: team_info.computePower >= 40,
         TeamAction.UPGRADE_ATTACK: team_info.computePower >= 40,
@@ -77,14 +79,18 @@ def character_action_mask(api, self_info: Optional[THUAI9.Character], nav: Navig
     visible_enemies = [e for e in api.GetEnemyCharacters() if e.characterActiveState != THUAI9.CharacterState.Deceased]
     attackable = any((self_info.x - e.x) ** 2 + (self_info.y - e.y) ** 2 <= self_info.commonAttackRange ** 2 for e in visible_enemies)
 
-    mask[CharacterAction.GO_RESOURCE] = resource is not None and room
-    mask[CharacterAction.HARVEST] = resource is not None and room and near(origin, resource)
+    mask[CharacterAction.GO_RESOURCE] = resource is not None
+    mask[CharacterAction.HARVEST] = resource is not None and near(origin, resource)
     mask[CharacterAction.GO_CENTER] = center is not None
-    mask[CharacterAction.OCCUPY_CENTER] = center is not None and near(origin, center)
+    mask[CharacterAction.OCCUPY_CENTER] = center is not None and near(origin, center) and self_info.characterType in (THUAI9.CharacterType.Drone, THUAI9.CharacterType.Robot)
     mask[CharacterAction.GO_MARKET] = market is not None and has_goods
     mask[CharacterAction.SELL_GOODS] = market is not None and has_goods and near(origin, market)
     mask[CharacterAction.GO_FACTORY] = own_factory is not None
-    mask[CharacterAction.LOAD_GOODS] = own_factory is not None and room and near(origin, own_factory)
+    has_factory_goods = False
+    if own_factory is not None:
+        fac = api.GetFactoryState(*own_factory)
+        has_factory_goods = fac is not None and any(int(v) > 0 for v in fac.productInventory.values())
+    mask[CharacterAction.LOAD_GOODS] = own_factory is not None and room and near(origin, own_factory) and has_factory_goods
     mask[CharacterAction.GO_ENEMY] = bool(visible_enemies)
     mask[CharacterAction.ATTACK_NEAREST_ENEMY] = attackable
     mask[CharacterAction.PRESSURE_ENEMY_FACTORY] = enemy_factory is not None
@@ -94,3 +100,14 @@ def character_action_mask(api, self_info: Optional[THUAI9.Character], nav: Navig
 
 def mask_as_list(mask: Dict[IntEnum, bool], actions: List[IntEnum]) -> List[int]:
     return [1 if mask.get(action, False) else 0 for action in actions]
+
+
+def _team_factory(api, team_id: int):
+    game_map = api.GetFullMap()
+    for x, row in enumerate(game_map or []):
+        for y, place in enumerate(row):
+            if place == THUAI9.PlaceType.Factory:
+                fac = api.GetFactoryState(x, y)
+                if fac is not None and fac.teamID == team_id:
+                    return fac
+    return None

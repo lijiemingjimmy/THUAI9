@@ -1,0 +1,21 @@
+{
+  "num_produce_requested": 128,
+  "num_produce_succeeded": 8,
+  "num_harvest_completed": 93,
+  "num_harvest_started": 8,
+  "num_returned_to_factory": 146,
+  "num_load_succeeded": 6,
+  "market_wait_steps": 60,
+  "goods_carried_steps": 66,
+  "num_sell_succeeded": 6,
+  "economy_loop_completed_count": 6,
+  "first_produce_time": 3004.0,
+  "first_harvest_time": 2704.0,
+  "first_load_time": 6504.0,
+  "first_sell_time": 10156.0,
+  "economy_loop_success_rate": 0.75,
+  "mean_time_to_first_sell": 26238.666666666668,
+  "goods_carried_time": 19.8,
+  "factory_wait_time": 0.0,
+  "market_wait_time": 18.0
+}

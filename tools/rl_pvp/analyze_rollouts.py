@@ -62,12 +62,23 @@ def analyze(log_dir: Path) -> tuple[Dict[str, Any], List[Dict[str, Any]], List[D
     last_tick_by_game = defaultdict(int)
     kinds = Counter()
     parse_errors = 0
+    invalid_by_action = Counter()
+    invalid_by_reason = Counter()
+    invalid_by_player = Counter()
+    invalid_by_fsm_state = Counter()
+    invalid_by_time_bucket = Counter()
+    valid_rows: List[Dict[str, Any]] = []
+    economy = Counter()
+    first_times: Dict[str, list] = defaultdict(list)
+    economy_timeline: List[Dict[str, Any]] = []
+    last_material_by_team: Dict[tuple[str, int], int] = {}
 
     for row in rows:
         if "_parse_error" in row:
             parse_errors += 1
             warnings.append(f"parse error {row['_path']}:{row['_line']}: {row['_parse_error']}")
             continue
+        valid_rows.append(row)
         missing = REQUIRED - row.keys()
         for m in missing:
             missing_fields[m] += 1
@@ -89,6 +100,14 @@ def analyze(log_dir: Path) -> tuple[Dict[str, Any], List[Dict[str, Any]], List[D
         success += int(ok)
         failure += int(not ok)
         invalid += int(not ok)
+        if not ok:
+            reason = str(row.get("failure_reason") or row.get("contract_reason") or "unknown")
+            fsm_state = str(row.get("fsm_state") or "none")
+            invalid_by_action[action] += 1
+            invalid_by_reason[reason] += 1
+            invalid_by_player[f"g={game}:t={team}:p={player}"] += 1
+            invalid_by_fsm_state[fsm_state] += 1
+            invalid_by_time_bucket[f"{(tick // 1000) * 1000}-{(tick // 1000 + 1) * 1000}"] += 1
         reward = row.get("reward", 0.0)
         try:
             reward_f = float(reward)
@@ -104,6 +123,46 @@ def analyze(log_dir: Path) -> tuple[Dict[str, Any], List[Dict[str, Any]], List[D
                 reward_component_counts[k] += 1
             except Exception:
                 pass
+        event_time = row.get("game_time") if row.get("game_time") is not None else row.get("timestamp_ms", 0)
+        economy_event = str(row.get("economy_event") or "")
+        fsm_state = str(row.get("fsm_state") or "")
+        if action == "HARVEST" and ok:
+            economy["num_harvest_started"] += 1
+            first_times["first_harvest_time"].append(event_time)
+        if action.startswith("PRODUCE_") or economy_event.startswith("produce"):
+            economy["num_produce_requested"] += 1
+            first_times["first_produce_time"].append(event_time)
+            if ok and economy_event == "produce_succeeded":
+                economy["num_produce_succeeded"] += 1
+        if action == "LOAD_GOODS" and ok:
+            economy["num_load_succeeded"] += 1
+            first_times["first_load_time"].append(event_time)
+        if action == "SELL_GOODS" and ok:
+            economy["num_sell_succeeded"] += 1
+            economy["economy_loop_completed_count"] += 1
+            first_times["first_sell_time"].append(event_time)
+        if fsm_state == "RETURN_FACTORY":
+            economy["num_returned_to_factory"] += 1
+        if fsm_state == "WAIT_PRODUCTION":
+            economy["factory_wait_steps"] += 1
+        if fsm_state in {"MOVE_TO_MARKET", "ALIGN_MARKET", "SELL_GOODS"}:
+            economy["market_wait_steps"] += 1
+        if (row.get("observation_summary") or {}).get("self_state", {}).get("goods_total", 0):
+            economy["goods_carried_steps"] += 1
+        key_tm = (game, team)
+        mat = int(row.get("raw_material") or 0)
+        prev_mat = last_material_by_team.get(key_tm)
+        if prev_mat is not None and mat > prev_mat:
+            economy["num_harvest_completed"] += 1
+        last_material_by_team[key_tm] = mat
+        economy_timeline.append({
+            "game_id": game, "team_id": team, "player_id": player, "game_tick": tick,
+            "game_time": row.get("game_time"), "macro_action": action, "success": ok,
+            "reason": row.get("failure_reason") or row.get("contract_reason") or "",
+            "fsm_state": row.get("fsm_state") or "", "score": row.get("score"),
+            "material": row.get("raw_material"), "goods_total": (row.get("observation_summary") or {}).get("self_state", {}).get("goods_total", 0),
+        })
+
         mask = row.get("action_mask") or []
         expected = 11 if kind == "team" else 13 if kind == "character" else len(mask)
         if len(mask) != expected:
@@ -141,6 +200,16 @@ def analyze(log_dir: Path) -> tuple[Dict[str, Any], List[Dict[str, Any]], List[D
     if total and zero_rewards / total > 0.9:
         warnings.append(f"reward mostly zero: {zero_rewards}/{total}")
 
+    economy_summary = dict(economy)
+    for key, values in first_times.items():
+        clean = [float(v) for v in values if v is not None]
+        economy_summary[key] = min(clean) if clean else None
+    economy_summary["economy_loop_success_rate"] = (economy_summary.get("num_sell_succeeded", 0) / max(1, economy_summary.get("num_harvest_started", 0)))
+    economy_summary["mean_time_to_first_sell"] = mean([float(v) for v in first_times.get("first_sell_time", [])]) if first_times.get("first_sell_time") else None
+    economy_summary["goods_carried_time"] = economy_summary.get("goods_carried_steps", 0) * 0.3
+    economy_summary["factory_wait_time"] = economy_summary.get("factory_wait_steps", 0) * 0.3
+    economy_summary["market_wait_time"] = economy_summary.get("market_wait_steps", 0) * 0.3
+
     summary = {
         "log_dir": str(log_dir),
         "num_games": len(games),
@@ -162,6 +231,13 @@ def analyze(log_dir: Path) -> tuple[Dict[str, Any], List[Dict[str, Any]], List[D
         "computing_power_curve": compute_curve,
         "raw_material_curve": material_curve,
         "factory_hp_curve": hp_curve,
+        "invalid_by_action": dict(invalid_by_action),
+        "invalid_by_reason": dict(invalid_by_reason),
+        "invalid_by_player": dict(invalid_by_player),
+        "invalid_by_fsm_state": dict(invalid_by_fsm_state),
+        "invalid_by_game_time_bucket": dict(invalid_by_time_bucket),
+        "economy_metrics": economy_summary,
+        "economy_timeline": economy_timeline,
         "warnings_count": len(warnings),
     }
     action_rows = [{"macro_action": k, "count": v, "rate": v / total if total else 0.0} for k, v in action_hist.most_common()]
@@ -180,6 +256,41 @@ def write_csv(path: Path, rows: List[Dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
+def counter_rows(data: Dict[str, int], key_name: str) -> List[Dict[str, Any]]:
+    total = sum(int(v) for v in data.values())
+    return [{key_name: k, "count": v, "rate": v / total if total else 0.0} for k, v in sorted(data.items(), key=lambda kv: (-kv[1], kv[0]))]
+
+
+def invalid_examples_markdown(summary: Dict[str, Any], rows: List[Dict[str, Any]], limit: int = 20) -> str:
+    rows = [r for r in rows if "_parse_error" not in r]
+    rows.sort(key=lambda r: (str(r.get("game_id")), int(r.get("team_id") or 0), int(r.get("player_id") or 0), int(r.get("timestamp_ms") or 0)))
+    lines: List[str] = []
+    by_key: Dict[tuple[str, int, int], List[Dict[str, Any]]] = defaultdict(list)
+    for r in rows:
+        by_key[(str(r.get("game_id")), int(r.get("team_id") or 0), int(r.get("player_id") or 0))].append(r)
+    emitted = 0
+    for key, seq in by_key.items():
+        for idx, r in enumerate(seq):
+            if bool(r.get("action_success")):
+                continue
+            obs = r.get("observation_summary") or {}
+            prev = [x.get("macro_action_name") for x in seq[max(0, idx - 3):idx]]
+            nxt = [x.get("macro_action_name") for x in seq[idx + 1:idx + 4]]
+            lines.append(f"## example {emitted + 1}")
+            lines.append(f"- game/team/player: {key[0]} / {key[1]} / {key[2]}")
+            lines.append(f"- timestamp_ms: {r.get('timestamp_ms')} tick: {r.get('game_tick')}")
+            lines.append(f"- fsm_state: {r.get('fsm_state')}")
+            lines.append(f"- action: {r.get('macro_action_name')} target: {r.get('target')}")
+            lines.append(f"- precondition/capi: {r.get('contract_reason') or r.get('failure_reason')} / success={r.get('action_success')}")
+            lines.append(f"- obs: score={r.get('score')} mat={r.get('raw_material')} hp={r.get('factory_hp')} self={obs.get('self_state', {})}")
+            lines.append(f"- prev3: {prev}")
+            lines.append(f"- next3: {nxt}\n")
+            emitted += 1
+            if emitted >= limit:
+                return "\n".join(lines)
+    return "\n".join(lines) if lines else "no invalid examples\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Analyze THUAI9 rollout JSONL logs.")
     parser.add_argument("--log-dir", type=Path, default=Path("outputs/rl_pvp/logs"))
@@ -190,6 +301,12 @@ def main() -> int:
     (args.out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     write_csv(args.out / "action_hist.csv", action_rows)
     write_csv(args.out / "reward_components.csv", comp_rows)
+    write_csv(args.out / "invalid_by_action.csv", counter_rows(summary.get("invalid_by_action", {}), "macro_action"))
+    write_csv(args.out / "invalid_by_reason.csv", counter_rows(summary.get("invalid_by_reason", {}), "reason"))
+    write_csv(args.out / "invalid_by_fsm_state.csv", counter_rows(summary.get("invalid_by_fsm_state", {}), "fsm_state"))
+    write_csv(args.out / "economy_timeline.csv", summary.get("economy_timeline", []))
+    (args.out / "economy_metrics.json").write_text(json.dumps(summary.get("economy_metrics", {}), ensure_ascii=False, indent=2), encoding="utf-8")
+    (args.out / "invalid_examples.md").write_text(invalid_examples_markdown(summary, list(iter_rows(args.log_dir))), encoding="utf-8")
     (args.out / "warnings.txt").write_text("\n".join(warnings) + ("\n" if warnings else ""), encoding="utf-8")
     print(json.dumps({k: summary[k] for k in ["num_games", "total_steps", "invalid_action_rate", "idle_action_rate", "action_success_rate", "reward_zero_rate", "warnings_count"]}, ensure_ascii=False, indent=2))
     return 0

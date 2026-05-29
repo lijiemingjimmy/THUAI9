@@ -1,0 +1,3 @@
+fsm_state,count,rate
+RECOVER_FROM_FAILURE,1,0.5
+START_HARVEST,1,0.5

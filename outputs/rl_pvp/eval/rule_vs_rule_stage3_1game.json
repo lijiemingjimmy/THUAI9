@@ -1,0 +1,175 @@
+{
+  "num_games": 1,
+  "candidate_team": "Team 1",
+  "mean_score": 0,
+  "std_score": 0.0,
+  "median_score": 0,
+  "economy_metrics": {
+    "num_produce_requested": 12.0,
+    "num_produce_succeeded": 6.0,
+    "num_harvest_completed": 19.0,
+    "num_harvest_started": 1.0,
+    "num_returned_to_factory": 8.0,
+    "factory_wait_steps": 3.0,
+    "num_load_succeeded": 1.0,
+    "market_wait_steps": 333.0,
+    "goods_carried_steps": 369.0,
+    "first_produce_time": 54205.0,
+    "first_harvest_time": 54105.0,
+    "first_load_time": 59354.0,
+    "economy_loop_success_rate": 0.0,
+    "goods_carried_time": 110.7,
+    "factory_wait_time": 0.8999999999999999,
+    "market_wait_time": 99.89999999999999
+  },
+  "win_rate": 1.0,
+  "rank_distribution": {
+    "1": 1
+  },
+  "mean_final_factory_hp": 300,
+  "factory_kill_rate": 0.0,
+  "average_first_score_time": null,
+  "average_first_center_occupation_time": null,
+  "kill_death_proxy": null,
+  "invalid_action_rate": 0.0,
+  "idle_action_rate": 0.036036036036036036,
+  "crash_rate": 0.0,
+  "timeout_rate": 0.0,
+  "average_game_duration": null,
+  "games": [
+    {
+      "path": "/home/jieming/THUAI9/outputs/rl_pvp/results/rule_vs_rule_stage3_1game_0000.json",
+      "crashed": false,
+      "scores": {
+        "Team 1": 0,
+        "Team 2": 0
+      },
+      "winner": "Team 1",
+      "ranked": [
+        [
+          "Team 1",
+          0
+        ],
+        [
+          "Team 2",
+          0
+        ]
+      ],
+      "returncode": 0,
+      "timeout": false,
+      "log_dir": "/home/jieming/THUAI9/outputs/rl_pvp/logs/rule_vs_rule_stage3_1game",
+      "rollout_summary": {
+        "total_steps": 4107,
+        "invalid_action_rate": 0.0,
+        "idle_action_rate": 0.036036036036036036,
+        "action_success_rate": 1.0,
+        "reward_zero_rate": 0.6459702946189433,
+        "last_tick_by_game": {
+          "rule_vs_rule_stage3_1game": 3594
+        }
+      },
+      "economy_metrics": {
+        "num_produce_requested": 12,
+        "num_produce_succeeded": 6,
+        "num_harvest_completed": 19,
+        "num_harvest_started": 1,
+        "num_returned_to_factory": 8,
+        "factory_wait_steps": 3,
+        "num_load_succeeded": 1,
+        "market_wait_steps": 333,
+        "goods_carried_steps": 369,
+        "first_produce_time": 54205.0,
+        "first_harvest_time": 54105.0,
+        "first_load_time": 59354.0,
+        "economy_loop_success_rate": 0.0,
+        "mean_time_to_first_sell": null,
+        "goods_carried_time": 110.7,
+        "factory_wait_time": 0.8999999999999999,
+        "market_wait_time": 99.89999999999999
+      },
+      "invalid_by_reason": {},
+      "invalid_by_fsm_state": {},
+      "action_hist": [
+        {
+          "macro_action": "GO_RESOURCE",
+          "count": 1379,
+          "rate": 0.3357682006330655
+        },
+        {
+          "macro_action": "GO_CENTER",
+          "count": 1101,
+          "rate": 0.2680788897005113
+        },
+        {
+          "macro_action": "SAVE_COMPUTE",
+          "count": 1084,
+          "rate": 0.26393961529096666
+        },
+        {
+          "macro_action": "GO_MARKET",
+          "count": 369,
+          "rate": 0.08984660336011688
+        },
+        {
+          "macro_action": "IDLE",
+          "count": 138,
+          "rate": 0.03360116873630387
+        },
+        {
+          "macro_action": "GO_FACTORY",
+          "count": 8,
+          "rate": 0.0019478938397857316
+        },
+        {
+          "macro_action": "PRODUCE_SEMICONDUCTOR",
+          "count": 6,
+          "rate": 0.0014609203798392988
+        },
+        {
+          "macro_action": "TEAM_IDLE",
+          "count": 6,
+          "rate": 0.0014609203798392988
+        },
+        {
+          "macro_action": "RECRUIT_CAR",
+          "count": 4,
+          "rate": 0.0009739469198928658
+        },
+        {
+          "macro_action": "WAIT_BUSY",
+          "count": 4,
+          "rate": 0.0009739469198928658
+        },
+        {
+          "macro_action": "RECRUIT_DRONE",
+          "count": 2,
+          "rate": 0.0004869734599464329
+        },
+        {
+          "macro_action": "UPGRADE_EFFICIENCY",
+          "count": 2,
+          "rate": 0.0004869734599464329
+        },
+        {
+          "macro_action": "UPGRADE_MOVE_SPEED",
+          "count": 2,
+          "rate": 0.0004869734599464329
+        },
+        {
+          "macro_action": "HARVEST",
+          "count": 1,
+          "rate": 0.00024348672997321646
+        },
+        {
+          "macro_action": "LOAD_GOODS",
+          "count": 1,
+          "rate": 0.00024348672997321646
+        }
+      ],
+      "rollout_warnings": [],
+      "mean_final_factory_hp_proxy": 300,
+      "first_score_time_proxy": null,
+      "first_center_occupation_time_proxy": null
+    }
+  ]
+}
